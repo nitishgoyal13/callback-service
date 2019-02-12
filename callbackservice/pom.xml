@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
@@ -60,6 +60,8 @@
         <guava.version>23.0</guava.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <dropwizard.riemann.version>1.3.5-4</dropwizard.riemann.version>
+        <rosey.dropwizard.config.version>1.0-SNAPSHOT</rosey.dropwizard.config.version>
     </properties>
 
     <repositories>
@@ -75,13 +77,11 @@
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
             <version>${dropwizard.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-assets</artifactId>
             <version>${dropwizard.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.smoketurner</groupId>
@@ -153,6 +153,12 @@
             <groupId>com.flipkart.ranger</groupId>
             <artifactId>ranger</artifactId>
             <version>${ranger.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.aerospike</groupId>
@@ -220,6 +226,78 @@
         <dependency>
             <groupId>io.dropwizard.revolver</groupId>
             <artifactId>dropwizard-revolver</artifactId>
+            <version>${dropwizard.version}-7-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.actors</groupId>
+            <artifactId>dropwizard-rabbitmq-actors</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-riemann</artifactId>
+            <version>${dropwizard.riemann.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.dropwizard</groupId>
+                    <artifactId>dropwizard-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.projectlombok</groupId>
+                    <artifactId>lombok</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.hystrix</groupId>
+            <artifactId>hystrix-configurator</artifactId>
+            <version>0.0.6</version>
+        </dependency>
+        <dependency>
+            <groupId>com.rabbitmq</groupId>
+            <artifactId>amqp-client</artifactId>
+            <version>3.6.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard.discovery</groupId>
+            <artifactId>dropwizard-service-discovery-bundle</artifactId>
+            <version>1.0.6-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.appform.core</groupId>
+            <artifactId>hystrix-function-wrapper</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.zapodot</groupId>
+            <artifactId>hystrix-dropwizard-bundle</artifactId>
+            <version>0.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.dropwizard</groupId>
+                    <artifactId>dropwizard-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.phonepe.platform</groupId>
+            <artifactId>rosey-dropwizard-config</artifactId>
+            <version>${rosey.dropwizard.config.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-oor</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-primer</artifactId>
             <version>${dropwizard.version}-7-SNAPSHOT</version>
         </dependency>
     </dependencies>

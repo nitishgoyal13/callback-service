@@ -1,0 +1,164 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 8080
+  adminConnectors:
+    - type: http
+      port: 8081
+  applicationContextPath: /
+  requestLog:
+    appenders:
+      - type: console
+        timeZone: IST
+
+logging:
+  level: WARN
+  # Logger-specific levels.pay
+  loggers:
+    deprecation: ERROR
+    ExecutionGraphGenerator: WARN
+    org.hibernate: ERROR
+    QueuedSender: WARN
+    feign: DEBUG
+
+  appenders:
+    - type: console
+      threshold: DEBUG
+      timeZone: IST
+      logFormat: "%(%-5level) [%date] %X{TRACE-ID} [%thread] [%logger{0}]: %message%n"
+
+rabbit:
+  brokers:
+    - host: localhost
+      port: 5672
+  exchange: callback_messages
+  threadPoolSize: 300
+  userName: guest
+  password: guest
+
+actorRmqConfig:
+  brokers:
+    - host: localhost
+      port: 5672
+  userName: guest
+  threadPoolSize: 300
+  password: guest
+
+serviceDiscovery:
+  namespace: phonepe
+  environment: local
+  zookeeper: localhost:2181
+  publishedHost: 127.0.0.1
+  publishedPort: 8080
+
+riemann:
+  host: riemann-stage.phonepe.int
+  port: 5555
+  prefix: phonepe.local.callback
+  pollingInterval: 30
+  tags:
+    - foxtrot
+
+callbackQueueConfig:
+  configList:
+    - queue: test
+
+actors:
+  CALLBACK:
+    exchange: callback_messages
+    delayed: false
+    prefix: callback.actors
+    concurrency: 3
+    prefetchCount: 1
+    retryConfig:
+      type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+      maxAttempts: 6
+      multipier: 50
+      maxTimeBetweenRetries: 30s
+
+primer:
+  enabled: true
+  endpoint:
+    type: ranger
+    namespace: phonepe
+    service: primer
+    environment: prod
+    zookeeper: "prd-appzk001.phonepe.nm1:2181,prd-appzk002.phonepe.nm1:2181,prd-appzk003.phonepe.nm1:2181"
+  cacheExpiry: 60
+  cacheMaxSize: 500000
+  clockSkew: 60
+  prefix: Bearer
+  privateKey: TwhjV5ujkvb41frpmqCve7ZfhqwSDMqOXe01DeDIsb2xCrW4bwfFnax9bi2uC9Kn
+  authorizations:
+    autoAuthorizations:
+      - type: auto
+        methods:
+          - GET
+        roles:
+          - consumer
+          - mailbox
+        url:  revolver/v1/response/{requestId}
+      - type: auto
+        methods:
+          - GET
+        roles:
+          - consumer
+          - mailbox
+        url:  revolver/v1/responses
+      - type: auto
+        methods:
+          - GET
+        roles:
+          - consumer
+          - mailbox
+        url: revolver/v1/request/status/{requestId}
+      - type: auto
+        methods:
+          - POST
+        roles:
+          - consumer
+          - mailbox
+        url: revolver/v1/request/ack/{requestId}
+
+revolver:
+  hystrixStreamPath: /hystrix.stream
+  mailBox:
+    type: aerospike
+    hosts: "prd-aerospikeprimer001.phonepe.nm1:3000,prd-aerospikeprimer002.phonepe.nm1:3000,prd-aerospikeprimer003.phonepe.nm1:3000,prd-aerospikeprimer004.phonepe.nm1:3000,prd-aerospikeprimer005.phonepe.nm1:3000"
+    namespace: revolver
+    maxConnectionsPerNode: 32
+    timeout: 1000
+    retries: 3
+    sleepBetweenRetries: 5
+    ttl: 3600
+  clientConfig:
+    clientName: phonepe-api
+  serviceResolverConfig:
+    useCurator: false
+    zkConnectionString: "prd-appzk001.phonepe.nm1:2181,prd-appzk002.phonepe.nm1:2181,prd-appzk003.phonepe.nm1:2181"
+    namespace: phonepe
+  services:
+    - type: http
+      service: clockwork
+      connectionPoolSize: 5
+      connectionKeepAliveInMillis: 60000
+      authEnabled: false
+      endpoint:
+        type: ranger_sharded
+        service: clockwork-server
+        environment: local
+      apis:
+        - api: cw_schedule
+          path: "jobs/{clientId}/v1"
+          methods:
+            - POST
+          authorization:
+            type: static
+            methods:
+              - POST
+            roles:
+              - internal-service
+          runtime:
+            threadPool:
+              concurrency: 12
+              timeout: 2000
