@@ -7,9 +7,6 @@ import com.platform.callback.hystrix.HystrixUtil;
 import com.rabbitmq.client.MessageProperties;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Created by santanu on 22/3/16.
- */
 @Slf4j
 public class RabbitMQCommands {
     private static RMQConnection connection;

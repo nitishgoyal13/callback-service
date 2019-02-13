@@ -17,9 +17,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-/**
- * Created by santanu on 22/3/16.
- */
 @Slf4j
 @Data
 public class RMQConnection implements Managed {

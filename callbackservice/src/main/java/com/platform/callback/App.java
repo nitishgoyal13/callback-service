@@ -8,6 +8,7 @@ import com.platform.callback.rabbitmq.ActionMessagePublisher;
 import com.platform.callback.rabbitmq.RMQConnection;
 import com.platform.callback.rabbitmq.actors.ActionType;
 import com.platform.callback.rabbitmq.actors.impl.CallbackActor;
+import com.platform.callback.resources.CallbackRequestResource;
 import com.platform.callback.resources.TestLocalSetupResource;
 import io.dropwizard.Application;
 import io.dropwizard.actors.RabbitmqActorBundle;
@@ -329,6 +330,15 @@ public class App extends Application<AppConfig> {
         environment.lifecycle()
                 .manage(callbackActor);
 
+        CallbackRequestResource callbackRequestResource = CallbackRequestResource.builder()
+                .callbackHandler(callbackHandler)
+                .jsonObjectMapper(objectMapper)
+                .persistenceProvider(persistenceProvider)
+                .msgPackObjectMapper(objectMapper)
+                .build();
+
+        environment.jersey()
+                .register(callbackRequestResource);
         environment.jersey()
                 .register(new TestLocalSetupResource());
 

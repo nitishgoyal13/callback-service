@@ -39,6 +39,7 @@ import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -52,13 +53,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * @author phaneesh
- */
 @Path("/apis/callback")
 @Slf4j
 @Singleton
 @Api(value = "Revolver Gateway", description = "Revolver api gateway endpoints")
+@Builder
 public class CallbackRequestResource {
 
     private final ObjectMapper jsonObjectMapper;
@@ -172,6 +171,16 @@ public class CallbackRequestResource {
         }
         val callMode = headers.getRequestHeaders()
                 .getFirst(RevolversHttpHeaders.CALL_MODE_HEADER);
+
+        if(callMode == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
+                                                                 headers.getMediaType() != null ? headers.getMediaType()
+                                                                         .toString() : MediaType.APPLICATION_JSON, jsonObjectMapper,
+                                                                 msgPackObjectMapper
+                                                                ))
+                    .build();
+        }
 
         switch (callMode.toUpperCase()) {
             case RevolverHttpCommand.CALL_MODE_CALLBACK:

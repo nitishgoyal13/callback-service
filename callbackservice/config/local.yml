@@ -76,61 +76,10 @@ actors:
       multipier: 50
       maxTimeBetweenRetries: 30s
 
-primer:
-  enabled: true
-  endpoint:
-    type: ranger
-    namespace: phonepe
-    service: primer
-    environment: prod
-    zookeeper: "prd-appzk001.phonepe.nm1:2181,prd-appzk002.phonepe.nm1:2181,prd-appzk003.phonepe.nm1:2181"
-  cacheExpiry: 60
-  cacheMaxSize: 500000
-  clockSkew: 60
-  prefix: Bearer
-  privateKey: TwhjV5ujkvb41frpmqCve7ZfhqwSDMqOXe01DeDIsb2xCrW4bwfFnax9bi2uC9Kn
-  authorizations:
-    autoAuthorizations:
-      - type: auto
-        methods:
-          - GET
-        roles:
-          - consumer
-          - mailbox
-        url:  revolver/v1/response/{requestId}
-      - type: auto
-        methods:
-          - GET
-        roles:
-          - consumer
-          - mailbox
-        url:  revolver/v1/responses
-      - type: auto
-        methods:
-          - GET
-        roles:
-          - consumer
-          - mailbox
-        url: revolver/v1/request/status/{requestId}
-      - type: auto
-        methods:
-          - POST
-        roles:
-          - consumer
-          - mailbox
-        url: revolver/v1/request/ack/{requestId}
-
 revolver:
   hystrixStreamPath: /hystrix.stream
   mailBox:
-    type: aerospike
-    hosts: "prd-aerospikeprimer001.phonepe.nm1:3000,prd-aerospikeprimer002.phonepe.nm1:3000,prd-aerospikeprimer003.phonepe.nm1:3000,prd-aerospikeprimer004.phonepe.nm1:3000,prd-aerospikeprimer005.phonepe.nm1:3000"
-    namespace: revolver
-    maxConnectionsPerNode: 32
-    timeout: 1000
-    retries: 3
-    sleepBetweenRetries: 5
-    ttl: 3600
+    type: in_memory
   clientConfig:
     clientName: phonepe-api
   serviceResolverConfig:
@@ -139,26 +88,26 @@ revolver:
     namespace: phonepe
   services:
     - type: http
-      service: clockwork
+      service: foxtrot
       connectionPoolSize: 5
       connectionKeepAliveInMillis: 60000
       authEnabled: false
       endpoint:
-        type: ranger_sharded
-        service: clockwork-server
-        environment: local
+        type: simple
+        host: localhost
+        port: 17000
       apis:
         - api: cw_schedule
-          path: "jobs/{clientId}/v1"
+          path: "foxtrot/v1/tables"
           methods:
-            - POST
+            - GET
           authorization:
             type: static
             methods:
-              - POST
+              - GET
             roles:
               - internal-service
           runtime:
             threadPool:
-              concurrency: 12
+              concurrency: 2
               timeout: 2000
