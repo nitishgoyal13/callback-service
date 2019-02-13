@@ -45,16 +45,16 @@ actorRmqConfig:
   password: guest
 
 serviceDiscovery:
-  namespace: phonepe
+  namespace: callback
   environment: local
   zookeeper: localhost:2181
   publishedHost: 127.0.0.1
   publishedPort: 8080
 
 riemann:
-  host: riemann-stage.phonepe.int
+  host: riemann-stage.local.int
   port: 5555
-  prefix: phonepe.local.callback
+  prefix: local.callback
   pollingInterval: 30
   tags:
     - foxtrot
@@ -81,11 +81,11 @@ revolver:
   mailBox:
     type: in_memory
   clientConfig:
-    clientName: phonepe-api
+    clientName: local-api
   serviceResolverConfig:
     useCurator: false
-    zkConnectionString: "prd-appzk001.phonepe.nm1:2181,prd-appzk002.phonepe.nm1:2181,prd-appzk003.phonepe.nm1:2181"
-    namespace: phonepe
+    zkConnectionString: "localhost:2181"
+    namespace: local
   services:
     - type: http
       service: foxtrot
