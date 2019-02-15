@@ -452,6 +452,8 @@ public class CallbackRequestResource {
                     .statusCode(result.getStatusCode())
                     .build();
             persistenceProvider.saveResponse(requestId, response, ttl);
+
+
             if(callMode != null && callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK)) {
                 String queueId = api.getCallbackQueueId();
                 ActionMessagePublisher.publish(CallbackMessage.builder()

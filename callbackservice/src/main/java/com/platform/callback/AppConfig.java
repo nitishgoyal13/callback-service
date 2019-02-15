@@ -2,7 +2,6 @@ package com.platform.callback;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hystrix.configurator.config.HystrixConfig;
-import com.platform.callback.rabbitmq.config.CallbackQueueConfig;
 import io.dropwizard.Configuration;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.config.RMQConfig;
@@ -58,9 +57,5 @@ public class AppConfig extends Configuration {
     @NotEmpty
     @Valid
     private Map<String, ActorConfig> actors;
-
-    @NotNull
-    private CallbackQueueConfig callbackQueueConfig;
-
 
 }

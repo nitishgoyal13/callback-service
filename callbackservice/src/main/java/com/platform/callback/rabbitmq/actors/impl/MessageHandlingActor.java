@@ -1,9 +1,10 @@
-package com.platform.callback.rabbitmq;
+package com.platform.callback.rabbitmq.actors.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import com.platform.callback.rabbitmq.ActionMessage;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.actor.UnmanagedBaseActor;
 import io.dropwizard.actors.connectivity.RMQConnection;
