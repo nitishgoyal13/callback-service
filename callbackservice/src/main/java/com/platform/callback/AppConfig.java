@@ -2,16 +2,14 @@ package com.platform.callback;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hystrix.configurator.config.HystrixConfig;
-import com.platform.callback.rabbitmq.actors.ActionType;
 import com.platform.callback.rabbitmq.config.CallbackQueueConfig;
-import com.platform.callback.rabbitmq.config.RMQConfig;
 import io.dropwizard.Configuration;
 import io.dropwizard.actors.actor.ActorConfig;
+import io.dropwizard.actors.config.RMQConfig;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryConfiguration;
 import io.dropwizard.primer.model.PrimerBundleConfiguration;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.riemann.RiemannConfig;
-import io.dropwizard.validation.ValidationMethod;
 import lombok.*;
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -35,17 +33,12 @@ public class AppConfig extends Configuration {
 
     @NotNull
     @Valid
-    private RMQConfig rabbit;
-
-    @NotNull
-    @Valid
-    private io.dropwizard.actors.config.RMQConfig actorRmqConfig;
+    private RMQConfig rmqConfig;
 
     @JsonProperty("appName")
     @Getter
     @Setter
     private String appName = "callback";
-
 
 
     @NotNull
@@ -64,19 +57,10 @@ public class AppConfig extends Configuration {
     @NotNull
     @NotEmpty
     @Valid
-    private Map<ActionType, ActorConfig> actors;
+    private Map<String, ActorConfig> actors;
 
     @NotNull
     private CallbackQueueConfig callbackQueueConfig;
 
 
-    @ValidationMethod
-    public boolean checkActorConfig() {
-        for(ActionType type : ActionType.values()) {
-            if(!actors.containsKey(type)) {
-                return false;
-            }
-        }
-        return true;
-    }
 }

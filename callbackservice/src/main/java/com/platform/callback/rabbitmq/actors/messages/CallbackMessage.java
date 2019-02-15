@@ -1,8 +1,8 @@
 package com.platform.callback.rabbitmq.actors.messages;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.platform.callback.rabbitmq.ActionMessage;
 import com.platform.callback.rabbitmq.ActionMessageVisitor;
-import com.platform.callback.rabbitmq.actors.ActionType;
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,20 +10,20 @@ import lombok.Data;
  Created by nitish.goyal on 05/02/19
  ***/
 @Data
-@Builder
 public class CallbackMessage extends ActionMessage {
 
+    public static final String TYPE = "callback";
+
+    @JsonProperty(value = "requestId")
     private String requestId;
 
-    protected CallbackMessage() {
-        super(ActionType.CALLBACK);
-    }
-
     @Builder
-    public CallbackMessage(String requestId) {
-        this();
+    public CallbackMessage(@JsonProperty(value = "queueId") String queueId, @JsonProperty(value = "type") String type,
+                           @JsonProperty(value = "requestId") String requestId) {
+        super(queueId, TYPE);
         this.requestId = requestId;
     }
+
 
     @Override
     public <T> T accept(ActionMessageVisitor<T> visitor) {

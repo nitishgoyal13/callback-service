@@ -21,6 +21,8 @@ import com.codahale.metrics.annotation.Metered;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.platform.callback.rabbitmq.ActionMessagePublisher;
+import com.platform.callback.rabbitmq.actors.messages.CallbackMessage;
 import io.dropwizard.jersey.PATCH;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.RevolverBundle;
@@ -348,7 +350,7 @@ public class CallbackRequestResource {
                 persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
             } else {
                 persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
-                saveResponse(requestId, result, callMode, mailBoxTtl);
+                saveResponse(requestId, result, callMode, mailBoxTtl, api);
             }
             return transform(headers, result, api.getApi(), path, method);
         } else {
@@ -358,10 +360,10 @@ public class CallbackRequestResource {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
                     } else if(result.getStatusCode() == Response.Status.OK.getStatusCode()) {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
-                        saveResponse(requestId, result, callMode, mailBoxTtl);
+                        saveResponse(requestId, result, callMode, mailBoxTtl, api);
                     } else {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.ERROR, mailBoxTtl);
-                        saveResponse(requestId, result, callMode, mailBoxTtl);
+                        saveResponse(requestId, result, callMode, mailBoxTtl, api);
                     }
                 } catch (Exception e) {
                     log.error("Error setting request state for request id: {}", requestId, e);
@@ -441,7 +443,8 @@ public class CallbackRequestResource {
         return transform(headers, result, api.getApi(), path, method);
     }
 
-    private void saveResponse(String requestId, RevolverHttpResponse result, final String callMode, final int ttl) {
+    private void saveResponse(String requestId, RevolverHttpResponse result, final String callMode, final int ttl,
+                              RevolverHttpApiConfig api) {
         try {
             val response = RevolverCallbackResponse.builder()
                     .body(result.getBody())
@@ -450,7 +453,11 @@ public class CallbackRequestResource {
                     .build();
             persistenceProvider.saveResponse(requestId, response, ttl);
             if(callMode != null && callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK)) {
-                callbackHandler.handle(requestId, response);
+                String queueId = api.getCallbackQueueId();
+                ActionMessagePublisher.publish(CallbackMessage.builder()
+                                                       .requestId(requestId)
+                                                       .queueId(queueId)
+                                                       .build());
             }
         } catch (Exception e) {
             log.error("Error saving response!", e);

@@ -5,14 +5,16 @@ import com.google.common.collect.Lists;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
 import com.phonepe.rosey.dwconfig.RoseyConfigSourceProvider;
 import com.platform.callback.rabbitmq.ActionMessagePublisher;
-import com.platform.callback.rabbitmq.RMQConnection;
-import com.platform.callback.rabbitmq.actors.ActionType;
-import com.platform.callback.rabbitmq.actors.impl.CallbackActor;
+import com.platform.callback.rabbitmq.CallbackMessageHandlingActor;
+import com.platform.callback.rabbitmq.MessageHandlingActor;
+import com.platform.callback.rabbitmq.RMQWrapper;
 import com.platform.callback.resources.CallbackRequestResource;
 import com.platform.callback.resources.TestLocalSetupResource;
 import io.dropwizard.Application;
 import io.dropwizard.actors.RabbitmqActorBundle;
+import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.config.RMQConfig;
+import io.dropwizard.actors.connectivity.RMQConnection;
 import io.dropwizard.actors.retry.RetryStrategyFactory;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -38,6 +40,9 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * Created by nitishgoyal13 on 31/1/19.
@@ -279,7 +284,7 @@ public class App extends Application<AppConfig> {
         rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {
             @Override
             protected RMQConfig getConfig(AppConfig appConfig) {
-                return appConfig.getActorRmqConfig();
+                return appConfig.getRmqConfig();
             }
         };
         bootstrap.addBundle(this.rabbitmqActorBundle);
@@ -301,7 +306,9 @@ public class App extends Application<AppConfig> {
 
         RetryStrategyFactory retryStrategyFactory = new RetryStrategyFactory();
 
-        RMQConnection rmqConnection = new RMQConnection(configuration.getRabbit());
+        RMQConnection rmqConnection = new RMQConnection(configuration.getRmqConfig(), metrics, Executors.newFixedThreadPool(
+                configuration.getRmqConfig()
+                        .getThreadPoolSize()));
         environment.lifecycle()
                 .manage(rmqConnection);
         log.info("InitializedManagedObject type: rabbitMqConnection");
@@ -317,18 +324,16 @@ public class App extends Application<AppConfig> {
                 .register(new RevolverRequestFilter(configuration.getRevolver()));
 
 
-        CallbackActor callbackActor = CallbackActor.builder()
-                .config(configuration.getActors()
-                                .get(ActionType.CALLBACK))
-                .connection(rabbitmqActorBundle.getConnection())
-                .mapper(objectMapper)
-                .retryStrategyFactory(retryStrategyFactory)
-                .callbackHandler(callbackHandler)
-                .persistenceProvider(persistenceProvider)
-                .build();
+        List<MessageHandlingActor> messageHandlingActorList = Lists.newArrayList();
+        for(Map.Entry<String, ActorConfig> actor : configuration.getActors()
+                .entrySet()) {
+            messageHandlingActorList.add(
+                    new CallbackMessageHandlingActor(actor.getKey(), actor.getValue(), rmqConnection, objectMapper, callbackHandler,
+                                                     persistenceProvider
+                    ));
+        }
 
-        environment.lifecycle()
-                .manage(callbackActor);
+        ActionMessagePublisher.initialize(messageHandlingActorList);
 
         CallbackRequestResource callbackRequestResource = CallbackRequestResource.builder()
                 .callbackHandler(callbackHandler)
@@ -337,12 +342,11 @@ public class App extends Application<AppConfig> {
                 .msgPackObjectMapper(objectMapper)
                 .build();
 
+        environment.lifecycle().manage(new RMQWrapper(rmqConnection));
         environment.jersey()
                 .register(callbackRequestResource);
         environment.jersey()
                 .register(new TestLocalSetupResource());
-
-        ActionMessagePublisher.initialize(Lists.newArrayList(callbackActor));
 
 
     }

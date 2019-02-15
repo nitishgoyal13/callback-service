@@ -1,12 +1,13 @@
 package com.platform.callback.rabbitmq;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.platform.callback.rabbitmq.actors.ActionType;
 import com.platform.callback.rabbitmq.actors.messages.CallbackMessage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Base action message
@@ -15,12 +16,19 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
-@JsonSubTypes({@JsonSubTypes.Type(name = "CALLBACK", value = CallbackMessage.class)})
+@JsonSubTypes({@JsonSubTypes.Type(name = CallbackMessage.TYPE, value = CallbackMessage.class)})
 public abstract class ActionMessage {
 
-    private final ActionType type;
+    @JsonProperty(value = "queueId", defaultValue = "DEFAULT")
+    public String queueId = "DEFAULT";
 
-    protected ActionMessage(ActionType type) {
+    @JsonProperty(value = "type")
+    private String type;
+
+    public ActionMessage(String queueId, String type) {
+        if(StringUtils.isNotEmpty(queueId)) {
+            this.queueId = queueId;
+        }
         this.type = type;
     }
 

@@ -13,23 +13,26 @@ import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import lombok.Builder;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Data
 public class CallbackActor extends Actor<ActionType, CallbackMessage> {
 
     private final PersistenceProvider persistenceProvider;
     private final InlineCallbackHandler callbackHandler;
+    private String queueId;
 
     @Builder
-    public CallbackActor(ActorConfig config, RMQConnection connection, ObjectMapper mapper,
-                         RetryStrategyFactory retryStrategyFactory, PersistenceProvider persistenceProvider,
-                         InlineCallbackHandler callbackHandler) {
+    public CallbackActor(ActorConfig config, RMQConnection connection, ObjectMapper mapper, RetryStrategyFactory retryStrategyFactory,
+                         PersistenceProvider persistenceProvider, InlineCallbackHandler callbackHandler, String queueId) {
         super(ActionType.CALLBACK, config, connection, mapper, retryStrategyFactory, CallbackMessage.class,
               ImmutableSet.of(JsonProcessingException.class)
              );
         this.persistenceProvider = persistenceProvider;
         this.callbackHandler = callbackHandler;
+        this.queueId = queueId;
     }
 
     @Override

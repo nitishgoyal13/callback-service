@@ -27,22 +27,14 @@ logging:
       timeZone: IST
       logFormat: "%(%-5level) [%date] %X{TRACE-ID} [%thread] [%logger{0}]: %message%n"
 
-rabbit:
+rmqConfig:
   brokers:
     - host: localhost
       port: 5672
-  exchange: callback_messages
-  threadPoolSize: 300
+  threadPoolSize: 2
   userName: guest
   password: guest
 
-actorRmqConfig:
-  brokers:
-    - host: localhost
-      port: 5672
-  userName: guest
-  threadPoolSize: 300
-  password: guest
 
 serviceDiscovery:
   namespace: callback
@@ -64,7 +56,18 @@ callbackQueueConfig:
     - queue: test
 
 actors:
-  CALLBACK:
+  DEFAULT:
+    exchange: callback_messages
+    delayed: false
+    prefix: callback.actors
+    concurrency: 3
+    prefetchCount: 1
+    retryConfig:
+      type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+      maxAttempts: 6
+      multipier: 50
+      maxTimeBetweenRetries: 30s
+  foxtrot-queue:
     exchange: callback_messages
     delayed: false
     prefix: callback.actors
@@ -86,6 +89,7 @@ revolver:
     useCurator: false
     zkConnectionString: "localhost:2181"
     namespace: local
+  callbackTimeout: 3000
   services:
     - type: http
       service: foxtrot
@@ -110,4 +114,5 @@ revolver:
           runtime:
             threadPool:
               concurrency: 2
-              timeout: 2000
+              timeout: 20000
+          callbackQueueId: foxtrot-queue
