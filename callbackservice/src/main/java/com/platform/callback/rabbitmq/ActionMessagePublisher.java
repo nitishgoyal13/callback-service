@@ -25,7 +25,7 @@ public class ActionMessagePublisher {
         });
     }
 
-    public static Map<String, MessageHandlingActor> getActors(){
+    public static Map<String, MessageHandlingActor> getActors() {
         return Collections.unmodifiableMap(actors);
     }
 

@@ -5,9 +5,9 @@ import com.google.common.collect.Lists;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
 import com.phonepe.rosey.dwconfig.RoseyConfigSourceProvider;
 import com.platform.callback.rabbitmq.ActionMessagePublisher;
+import com.platform.callback.rabbitmq.RMQWrapper;
 import com.platform.callback.rabbitmq.actors.impl.CallbackMessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
-import com.platform.callback.rabbitmq.RMQWrapper;
 import com.platform.callback.resources.CallbackRequestResource;
 import com.platform.callback.resources.TestLocalSetupResource;
 import io.dropwizard.Application;
@@ -50,11 +50,9 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class App extends Application<AppConfig> {
     private static final String SERVICE_NAME = "callback";
-
+    private static ConfigurationSourceProvider configurationSourceProvider;
     private ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
     private RabbitmqActorBundle<AppConfig> rabbitmqActorBundle;
-
-    private static ConfigurationSourceProvider configurationSourceProvider;
 
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {
@@ -342,7 +340,8 @@ public class App extends Application<AppConfig> {
                 .msgPackObjectMapper(objectMapper)
                 .build();
 
-        environment.lifecycle().manage(new RMQWrapper(rmqConnection));
+        environment.lifecycle()
+                .manage(new RMQWrapper(rmqConnection));
         environment.jersey()
                 .register(callbackRequestResource);
         environment.jersey()

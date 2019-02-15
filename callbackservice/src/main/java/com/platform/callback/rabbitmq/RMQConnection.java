@@ -74,8 +74,7 @@ public class RMQConnection implements Managed {
     }
 
 
-    private void ensure(final String queueName, final String routingQueue, String exchange, Map<String, Object> rmqOpts)
-            throws Exception {
+    private void ensure(final String queueName, final String routingQueue, String exchange, Map<String, Object> rmqOpts) throws Exception {
         channel.queueDeclare(queueName, true, false, false, rmqOpts);
         channel.queueBind(queueName, exchange, routingQueue);
         log.info("Created queue: {}", queueName);

@@ -62,19 +62,13 @@ import java.util.concurrent.CompletableFuture;
 @Builder
 public class CallbackRequestResource {
 
-    private final ObjectMapper jsonObjectMapper;
-
-    private final ObjectMapper msgPackObjectMapper;
-
-    private final PersistenceProvider persistenceProvider;
-
-    private final InlineCallbackHandler callbackHandler;
-
     private static final Map<String, String> BAD_REQUEST_RESPONSE = Collections.singletonMap("message", "Bad Request");
-
-    private static Map<String, String> SERVICE_UNAVAILABLE_RESPONSE = Collections.singletonMap("message", "Service Unavailable");
-
     private static final Map<String, String> DUPLICATE_REQUEST_RESPONSE = Collections.singletonMap("message", "Duplicate");
+    private static Map<String, String> SERVICE_UNAVAILABLE_RESPONSE = Collections.singletonMap("message", "Service Unavailable");
+    private final ObjectMapper jsonObjectMapper;
+    private final ObjectMapper msgPackObjectMapper;
+    private final PersistenceProvider persistenceProvider;
+    private final InlineCallbackHandler callbackHandler;
 
     public CallbackRequestResource(final ObjectMapper jsonObjectMapper, final ObjectMapper msgPackObjectMapper,
                                    final PersistenceProvider persistenceProvider, final InlineCallbackHandler callbackHandler) {

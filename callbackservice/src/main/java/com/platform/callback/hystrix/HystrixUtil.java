@@ -10,8 +10,7 @@ public class HystrixUtil {
                 .execute() : function.run();
     }
 
-    public static <T> T execute(String group, String command, String traceId, final HandlerAdapter<T> function)
-            throws Exception {
+    public static <T> T execute(String group, String command, String traceId, final HandlerAdapter<T> function) throws Exception {
         return ConfigManager.isHystrixEnabled() ? CommandFactory.<T>create(group, command, traceId).executor(function)
                 .execute() : function.run();
     }

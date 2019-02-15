@@ -4,7 +4,7 @@ import com.platform.callback.rabbitmq.actors.messages.CallbackMessage;
 
 public interface ActionMessageVisitor<T> {
 
-    T visit (CallbackMessage callbackMessage);
+    T visit(CallbackMessage callbackMessage);
 
 
 }

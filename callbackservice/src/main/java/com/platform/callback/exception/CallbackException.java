@@ -10,7 +10,7 @@ import lombok.Data;
 @AllArgsConstructor
 @Builder
 @Data
-public class CallbackException extends RuntimeException{
+public class CallbackException extends RuntimeException {
 
     private ResponseCode responseCode;
 
