@@ -1,9 +1,9 @@
-package com.platform.callback.rabbitmq;
+package com.platform.callback.rabbitmq.actors.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.platform.callback.rabbitmq.actors.messages.CallbackMessage;
+import com.platform.callback.rabbitmq.ActionMessageVisitor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;

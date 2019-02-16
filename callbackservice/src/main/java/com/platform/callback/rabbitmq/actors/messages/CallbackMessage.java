@@ -1,7 +1,6 @@
 package com.platform.callback.rabbitmq.actors.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.platform.callback.rabbitmq.ActionMessage;
 import com.platform.callback.rabbitmq.ActionMessageVisitor;
 import lombok.Builder;
 import lombok.Data;

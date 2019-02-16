@@ -2,7 +2,7 @@ package com.platform.callback.rabbitmq.actors.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
-import com.platform.callback.rabbitmq.ActionMessage;
+import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import com.platform.callback.rabbitmq.actors.messages.CallbackMessage;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
