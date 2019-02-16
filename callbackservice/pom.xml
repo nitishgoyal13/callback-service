@@ -49,6 +49,7 @@
         <dropwizard.servicediscovery>1.3.5-0</dropwizard.servicediscovery>
         <hystrix.version>1.5.11</hystrix.version>
         <aerospike.version>4.2.2</aerospike.version>
+        <checkmate.version>1.3.7-2</checkmate.version>
         <ranger.version>0.4.0</ranger.version>
         <http.client.version>4.5.6</http.client.version>
         <commons.text.version>1.4</commons.text.version>
@@ -107,7 +108,7 @@
             <artifactId>guice</artifactId>
             <version>4.1.0</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>io.dropwizard.discovery</groupId>
             <artifactId>dropwizard-service-discovery-client</artifactId>
             <version>${dropwizard.servicediscovery}</version>
@@ -121,7 +122,7 @@
                     <artifactId>dropwizard-assets</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -154,7 +155,7 @@
             <artifactId>hystrix-codahale-metrics-publisher</artifactId>
             <version>${hystrix.version}</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>com.flipkart.ranger</groupId>
             <artifactId>ranger</artifactId>
             <version>${ranger.version}</version>
@@ -164,7 +165,7 @@
                     <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>com.aerospike</groupId>
             <artifactId>aerospike-client</artifactId>
@@ -185,6 +186,17 @@
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-checkmate</artifactId>
+            <version>${checkmate.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.dropwizard</groupId>
+                    <artifactId>dropwizard-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>

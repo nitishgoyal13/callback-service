@@ -16,11 +16,18 @@ import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.config.RMQConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
 import io.dropwizard.actors.retry.RetryStrategyFactory;
+import io.dropwizard.checkmate.CheckmateBundle;
+import io.dropwizard.checkmate.model.CheckmateBundleConfiguration;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryBundle;
+import io.dropwizard.discovery.bundle.ServiceDiscoveryConfiguration;
 import io.dropwizard.oor.OorBundle;
+import io.dropwizard.primer.PrimerBundle;
+import io.dropwizard.primer.model.PrimerAuthorization;
+import io.dropwizard.primer.model.PrimerAuthorizationMatrix;
+import io.dropwizard.primer.model.PrimerBundleConfiguration;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.aeroapike.AerospikeConnectionManager;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
@@ -28,6 +35,8 @@ import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.filters.RevolverRequestFilter;
 import io.dropwizard.revolver.handler.ConfigSource;
+import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
+import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -40,18 +49,20 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * Created by nitishgoyal13 on 31/1/19.
  */
 @Slf4j
 public class App extends Application<AppConfig> {
-    private static final String SERVICE_NAME = "callback";
     private static ConfigurationSourceProvider configurationSourceProvider;
-    private ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
+    private static ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
     private RabbitmqActorBundle<AppConfig> rabbitmqActorBundle;
 
     @Override
@@ -76,10 +87,10 @@ public class App extends Application<AppConfig> {
             ));
         }
 
-        /*serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
+        serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
             protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
-                return configuration.getServiceDiscovery();
+                return configuration.getDiscovery();
             }
 
             @Override
@@ -89,12 +100,13 @@ public class App extends Application<AppConfig> {
 
             @Override
             protected int getPort(AppConfig configuration) {
-                return configuration.getServiceDiscovery()
+                return configuration.getDiscovery()
                         .getPublishedPort();
             }
 
         };
-        bootstrap.addBundle(serviceDiscoveryBundle);*/
+        bootstrap.addBundle(serviceDiscoveryBundle);
+
 
         bootstrap.addBundle(new RevolverBundle<AppConfig>() {
 
@@ -128,21 +140,21 @@ public class App extends Application<AppConfig> {
             }
         });
 
-        /*bootstrap.addBundle(new PrimerBundle<AppConfig>() {
+        bootstrap.addBundle(new PrimerBundle<AppConfig>() {
 
             @Override
-            public CuratorFramework getCurator(AppConfig appConfig) {
+            public CuratorFramework getCurator(AppConfig configuration) {
                 return serviceDiscoveryBundle.getCurator();
             }
 
             @Override
-            public PrimerBundleConfiguration getPrimerConfiguration(AppConfig appConfig) {
-                return appConfig.getPrimer();
+            public PrimerBundleConfiguration getPrimerConfiguration(AppConfig apiConfiguration) {
+                return apiConfiguration.getPrimer();
             }
 
             @Override
-            public Set<String> withWhiteList(AppConfig appConfig) {
-                return appConfig.getRevolver()
+            public Set<String> withWhiteList(AppConfig apiConfiguration) {
+                return apiConfiguration.getRevolver()
                         .getServices()
                         .stream()
                         .filter(service -> service instanceof RevolverHttpServiceConfig)
@@ -156,8 +168,8 @@ public class App extends Application<AppConfig> {
             }
 
             @Override
-            public PrimerAuthorizationMatrix withAuthorization(AppConfig appConfig) {
-                val staticAuth = appConfig.getRevolver()
+            public PrimerAuthorizationMatrix withAuthorization(AppConfig apiConfiguration) {
+                val staticAuth = apiConfiguration.getRevolver()
                         .getServices()
                         .stream()
                         .filter(service -> service instanceof RevolverHttpServiceConfig)
@@ -169,7 +181,7 @@ public class App extends Application<AppConfig> {
                                 .collect(Collectors.toSet()))
                         .flatMap(Collection::stream)
                         .collect(Collectors.toList());
-                val dynamicAuth = appConfig.getRevolver()
+                val dynamicAuth = apiConfiguration.getRevolver()
                         .getServices()
                         .stream()
                         .filter(service -> service instanceof RevolverHttpServiceConfig)
@@ -181,7 +193,7 @@ public class App extends Application<AppConfig> {
                                 .collect(Collectors.toSet()))
                         .flatMap(Collection::stream)
                         .collect(Collectors.toList());
-                val autoAuth = appConfig.getRevolver()
+                val autoAuth = apiConfiguration.getRevolver()
                         .getServices()
                         .stream()
                         .filter(service -> service instanceof RevolverHttpServiceConfig)
@@ -193,26 +205,26 @@ public class App extends Application<AppConfig> {
                                 .collect(Collectors.toSet()))
                         .flatMap(Collection::stream)
                         .collect(Collectors.toList());
-                if(appConfig.getPrimer() != null && appConfig.getPrimer()
-                                                            .getAuthorizations() != null) {
-                    if(appConfig.getPrimer()
+                if(apiConfiguration.getPrimer() != null && apiConfiguration.getPrimer()
+                                                                   .getAuthorizations() != null) {
+                    if(apiConfiguration.getPrimer()
                                .getAuthorizations()
                                .getAutoAuthorizations() != null) {
-                        autoAuth.addAll(appConfig.getPrimer()
+                        autoAuth.addAll(apiConfiguration.getPrimer()
                                                 .getAuthorizations()
                                                 .getAutoAuthorizations());
                     }
-                    if(appConfig.getPrimer()
+                    if(apiConfiguration.getPrimer()
                                .getAuthorizations()
                                .getStaticAuthorizations() != null) {
-                        autoAuth.addAll(appConfig.getPrimer()
+                        autoAuth.addAll(apiConfiguration.getPrimer()
                                                 .getAuthorizations()
                                                 .getStaticAuthorizations());
                     }
-                    if(appConfig.getPrimer()
+                    if(apiConfiguration.getPrimer()
                                .getAuthorizations()
                                .getAuthorizations() != null) {
-                        dynamicAuth.addAll(appConfig.getPrimer()
+                        dynamicAuth.addAll(apiConfiguration.getPrimer()
                                                    .getAuthorizations()
                                                    .getAuthorizations());
                     }
@@ -277,7 +289,7 @@ public class App extends Application<AppConfig> {
                         .equals("auto"));
             }
 
-        });*/
+        });
 
         rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {
             @Override
@@ -292,6 +304,13 @@ public class App extends Application<AppConfig> {
             @Override
             public RiemannConfig getRiemannConfiguration(AppConfig configuration) {
                 return configuration.getRiemann();
+            }
+        });
+
+        bootstrap.addBundle(new CheckmateBundle<AppConfig>(serviceDiscoveryBundle.getCurator()) {
+            @Override
+            public CheckmateBundleConfiguration getCheckmateConfiguration(AppConfig apiConfiguration) {
+                return apiConfiguration.getCheckmate();
             }
         });
     }

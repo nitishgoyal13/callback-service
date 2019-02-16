@@ -11,6 +11,21 @@ server:
       - type: console
         timeZone: IST
 
+checkmate:
+  requestValidation: false
+  responseChecksum: false
+  clockSkew: 120
+  algorithm: AES/ECB/PKCS5Padding
+  whiteList:
+    - revolver/v1/callback/{requestId}
+    - revolver/dashboard
+    - revolver/v1/metadata/status
+    - revolver/v1/metadata/config
+    - revolver/v1/request/status/{requestId}
+    - revolver/v1/request/ack/{requestId}
+    - revolver/v1/response/{requestId}
+    - apis/callback/foxtrot/foxtrot/v1/tables
+
 logging:
   level: WARN
   # Logger-specific levels.pay
@@ -35,9 +50,8 @@ rmqConfig:
   userName: guest
   password: guest
 
-
-serviceDiscovery:
-  namespace: callback
+discovery:
+  namespace: phonepe
   environment: local
   zookeeper: localhost:2181
   publishedHost: 127.0.0.1
@@ -75,6 +89,29 @@ actors:
       multipier: 50
       maxTimeBetweenRetries: 30s
 
+primer:
+  enabled: false
+  endpoint:
+    type: ranger
+    namespace: phonepe
+    service: primer
+    environment: local
+    zookeeper: localhost:2181
+  cacheExpiry: 10
+  cacheMaxSize: 100000
+  clockSkew: 60
+  prefix: Bearer
+  privateKey: TwhjV5ujkvb41frpmqCve7ZfhqwSDMqOXe01DeDIsb2xCrW4bwfFnax9bi2uC9Kn
+  whileListUrl:
+    - revolver/v1/callback/{requestId}
+    - revolver/dashboard
+    - revolver/v1/metadata/status
+    - revolver/v1/metadata/config
+    - revolver/v1/request/status/{requestId}
+    - revolver/v1/request/ack/{requestId}
+    - revolver/v1/response/{requestId}
+    - apis/users/foxtrot/v1/tables
+
 revolver:
   hystrixStreamPath: /hystrix.stream
   mailBox:
@@ -107,6 +144,7 @@ revolver:
               - GET
             roles:
               - internal-service
+          whitelist: true
           runtime:
             threadPool:
               concurrency: 2

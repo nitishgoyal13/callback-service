@@ -5,6 +5,7 @@ import com.hystrix.configurator.config.HystrixConfig;
 import io.dropwizard.Configuration;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.config.RMQConfig;
+import io.dropwizard.checkmate.model.CheckmateBundleConfiguration;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryConfiguration;
 import io.dropwizard.primer.model.PrimerBundleConfiguration;
 import io.dropwizard.revolver.core.config.RevolverConfig;
@@ -45,9 +46,10 @@ public class AppConfig extends Configuration {
     @JsonProperty
     private HystrixConfig hystrixConfig = new HystrixConfig();
 
-    @NotNull
-    @Valid
-    private ServiceDiscoveryConfiguration serviceDiscovery;
+    @JsonProperty("discovery")
+    @Getter
+    @Setter
+    private ServiceDiscoveryConfiguration discovery;
 
     @NotNull
     @Valid
@@ -57,5 +59,11 @@ public class AppConfig extends Configuration {
     @NotEmpty
     @Valid
     private Map<String, ActorConfig> actors;
+
+    @JsonProperty("checkmate")
+    @Getter
+    @Setter
+    private CheckmateBundleConfiguration checkmate;
+
 
 }
