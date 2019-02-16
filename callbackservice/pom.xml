@@ -317,6 +317,11 @@
             <artifactId>dropwizard-primer</artifactId>
             <version>${dropwizard.version}-7-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.platform</groupId>
+            <artifactId>utils</artifactId>
+            <version>1.2</version>
+        </dependency>
     </dependencies>
 
 

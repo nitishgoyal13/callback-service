@@ -14,7 +14,6 @@ import io.dropwizard.actors.RabbitmqActorBundle;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.config.RMQConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
-import io.dropwizard.actors.retry.RetryStrategyFactory;
 import io.dropwizard.checkmate.CheckmateBundle;
 import io.dropwizard.checkmate.model.CheckmateBundleConfiguration;
 import io.dropwizard.configuration.ConfigurationSourceProvider;
@@ -60,9 +59,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class App extends Application<AppConfig> {
-    private static ConfigurationSourceProvider configurationSourceProvider;
-    private static ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
-    private RabbitmqActorBundle<AppConfig> rabbitmqActorBundle;
 
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {
@@ -72,8 +68,8 @@ public class App extends Application<AppConfig> {
                 return false;
             }
         });
-        configurationSourceProvider = new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(),
-                                                                     new EnvironmentVariableSubstitutor()
+        ConfigurationSourceProvider configurationSourceProvider = new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(),
+                                                                                                 new EnvironmentVariableSubstitutor()
         );
         String localConfigStr = System.getenv("localConfig");
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
@@ -86,7 +82,7 @@ public class App extends Application<AppConfig> {
             ));
         }
 
-        serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
+        ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
             protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
                 return configuration.getDiscovery();
@@ -290,13 +286,13 @@ public class App extends Application<AppConfig> {
 
         });
 
-        rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {
+        RabbitmqActorBundle<AppConfig> rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {
             @Override
             protected RMQConfig getConfig(AppConfig appConfig) {
                 return appConfig.getRmqConfig();
             }
         };
-        bootstrap.addBundle(this.rabbitmqActorBundle);
+        bootstrap.addBundle(rabbitmqActorBundle);
 
         bootstrap.addBundle(new RiemannBundle<AppConfig>() {
 
@@ -319,8 +315,6 @@ public class App extends Application<AppConfig> {
         val executionEnv = System.getenv("CONFIG_ENV");
         val objectMapper = environment.getObjectMapper();
         val metrics = environment.metrics();
-
-        RetryStrategyFactory retryStrategyFactory = new RetryStrategyFactory();
 
         RMQConnection rmqConnection = new RMQConnection(configuration.getRmqConfig(), metrics, Executors.newFixedThreadPool(
                 configuration.getRmqConfig()
