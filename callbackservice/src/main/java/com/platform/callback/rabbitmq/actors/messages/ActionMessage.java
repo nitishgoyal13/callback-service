@@ -19,8 +19,9 @@ import org.apache.commons.lang3.StringUtils;
 @JsonSubTypes({@JsonSubTypes.Type(name = CallbackMessage.TYPE, value = CallbackMessage.class)})
 public abstract class ActionMessage {
 
+    public static final String DEFAULT_QUEUE_ID = "DEFAULT";
     @JsonProperty(value = "queueId", defaultValue = "DEFAULT")
-    public String queueId = "DEFAULT";
+    public String queueId = DEFAULT_QUEUE_ID;
 
     @JsonProperty(value = "type")
     private String type;
