@@ -55,7 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-@Path("/apis/callback")
+@Path("/apis")
 @Slf4j
 @Singleton
 @Api(value = "Revolver Gateway", description = "Revolver api gateway endpoints")

@@ -3,7 +3,6 @@ package com.platform.callback;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hystrix.configurator.config.HystrixConfig;
 import io.dropwizard.Configuration;
-import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.config.RMQConfig;
 import io.dropwizard.checkmate.model.CheckmateBundleConfiguration;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryConfiguration;
@@ -11,11 +10,9 @@ import io.dropwizard.primer.model.PrimerBundleConfiguration;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.riemann.RiemannConfig;
 import lombok.*;
-import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.util.Map;
 
 /**
  * App configuration class
@@ -38,7 +35,7 @@ public class AppConfig extends Configuration {
     @JsonProperty("appName")
     @Getter
     @Setter
-    private String appName = "callback";
+    private String appName = "api-callback";
 
 
     @NotNull

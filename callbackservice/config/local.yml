@@ -24,7 +24,7 @@ checkmate:
     - revolver/v1/request/status/{requestId}
     - revolver/v1/request/ack/{requestId}
     - revolver/v1/response/{requestId}
-    - apis/callback/foxtrot/foxtrot/v1/tables
+    - apis/foxtrot/foxtrot/v1/tables
 
 logging:
   level: WARN
