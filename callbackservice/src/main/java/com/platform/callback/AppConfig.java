@@ -55,11 +55,6 @@ public class AppConfig extends Configuration {
     @Valid
     private RiemannConfig riemann;
 
-    @NotNull
-    @NotEmpty
-    @Valid
-    private Map<String, ActorConfig> actors;
-
     @JsonProperty("checkmate")
     @Getter
     @Setter

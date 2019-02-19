@@ -65,30 +65,6 @@ riemann:
   tags:
     - foxtrot
 
-actors:
-  DEFAULT:
-    exchange: callback_messages
-    delayed: false
-    prefix: callback.actors
-    concurrency: 3
-    prefetchCount: 1
-    retryConfig:
-      type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
-      maxAttempts: 6
-      multipier: 50
-      maxTimeBetweenRetries: 30s
-  foxtrot-queue:
-    exchange: callback_messages
-    delayed: false
-    prefix: callback.actors
-    concurrency: 3
-    prefetchCount: 1
-    retryConfig:
-      type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
-      maxAttempts: 6
-      multipier: 50
-      maxTimeBetweenRetries: 30s
-
 primer:
   enabled: false
   endpoint:
@@ -133,6 +109,29 @@ revolver:
         type: simple
         host: localhost
         port: 17000
+      actors:
+        DEFAULT:
+          exchange: callback_messages
+          delayed: false
+          prefix: callback.actors
+          concurrency: 3
+          prefetchCount: 1
+          retryConfig:
+            type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+            maxAttempts: 6
+            multipier: 50
+            maxTimeBetweenRetries: 30s
+        foxtrot-queue:
+          exchange: callback_messages
+          delayed: false
+          prefix: callback.actors
+          concurrency: 3
+          prefetchCount: 1
+          retryConfig:
+            type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+            maxAttempts: 6
+            multipier: 50
+            maxTimeBetweenRetries: 30s
       apis:
         - api: cw_schedule
           path: "foxtrot/v1/tables"

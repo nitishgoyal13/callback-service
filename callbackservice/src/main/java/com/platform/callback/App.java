@@ -1,7 +1,9 @@
 package com.platform.callback;
 
+import com.collections.CollectionUtils;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
 import com.phonepe.rosey.dwconfig.RoseyConfigSourceProvider;
 import com.platform.callback.rabbitmq.ActionMessagePublisher;
@@ -31,6 +33,7 @@ import io.dropwizard.revolver.aeroapike.AerospikeConnectionManager;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.filters.RevolverRequestFilter;
 import io.dropwizard.revolver.handler.ConfigSource;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
@@ -52,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -316,11 +320,7 @@ public class App extends Application<AppConfig> {
         val objectMapper = environment.getObjectMapper();
         val metrics = environment.metrics();
 
-        RMQConnection rmqConnection = new RMQConnection(configuration.getRmqConfig(), metrics, Executors.newFixedThreadPool(
-                configuration.getRmqConfig()
-                        .getThreadPoolSize()));
-        environment.lifecycle()
-                .manage(rmqConnection);
+
         log.info("InitializedManagedObject type: rabbitMqConnection");
 
         HystrixConfigurationFactory.init(configuration.getHystrixConfig());
@@ -335,13 +335,22 @@ public class App extends Application<AppConfig> {
 
 
         List<MessageHandlingActor> messageHandlingActorList = Lists.newArrayList();
-        for(Map.Entry<String, ActorConfig> actor : configuration.getActors()
-                .entrySet()) {
-            messageHandlingActorList.add(
-                    new CallbackMessageHandlingActor(actor.getKey(), actor.getValue(), rmqConnection, objectMapper, callbackHandler,
-                                                     persistenceProvider
-                    ));
-        }
+
+        Map<String, ActorConfig> actors = getActors(configuration);
+        AtomicInteger rmqConcurrency = new AtomicInteger();
+        actors.forEach((a, actorConfig) -> {
+            rmqConcurrency.addAndGet(actorConfig.getConcurrency());
+        });
+
+        RMQConnection rmqConnection = new RMQConnection(configuration.getRmqConfig(), metrics,
+                                                        Executors.newFixedThreadPool(rmqConcurrency.get())
+        );
+        environment.lifecycle()
+                .manage(rmqConnection);
+
+        actors.forEach((a, actorConfig) -> messageHandlingActorList.add(
+                new CallbackMessageHandlingActor(a, actorConfig, rmqConnection, objectMapper, callbackHandler, persistenceProvider)));
+
 
         ActionMessagePublisher.initialize(messageHandlingActorList);
 
@@ -357,6 +366,15 @@ public class App extends Application<AppConfig> {
         environment.jersey()
                 .register(callbackRequestResource);
 
+    }
+
+    private Map<String, ActorConfig> getActors(AppConfig configuration) {
+        Map<String, ActorConfig> actors = Maps.newHashMap();
+        for(RevolverServiceConfig revolverServiceConfig : configuration.getRevolver()
+                .getServices()) {
+            actors.putAll(CollectionUtils.nullSafeMap(revolverServiceConfig.getActors()));
+        }
+        return actors;
     }
 
     private PersistenceProvider getPersistenceProvider(final AppConfig configuration, final Environment environment) {
