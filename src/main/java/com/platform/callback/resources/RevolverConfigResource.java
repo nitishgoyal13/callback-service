@@ -34,7 +34,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 
-@Path("/revolver")
+@Path("/callback")
 @Slf4j
 @Data
 @Singleton

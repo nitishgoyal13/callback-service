@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 /**
  * @author phaneesh
  */
-@Path("/revolver")
+@Path("/callback")
 @Slf4j
 @Data
 @Singleton

@@ -46,7 +46,7 @@ import java.util.List;
 /**
  * @author phaneesh
  */
-@Path("/revolver")
+@Path("/callback")
 @Slf4j
 @Data
 @AllArgsConstructor

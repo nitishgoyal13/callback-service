@@ -45,7 +45,7 @@ import static io.dropwizard.revolver.RevolverBundle.getHttpCommand;
 /**
  * @author phaneesh
  */
-@Path("/revolver")
+@Path("/callback")
 @Slf4j
 @Singleton
 @Api(value = "RequestCallback", description = "Revolver gateway api for callbacks on mailbox requests")
