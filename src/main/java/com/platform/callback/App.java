@@ -160,7 +160,7 @@ public class App extends Application<AppConfig> {
                         .map(service -> ((RevolverHttpServiceConfig)service).getApis()
                                 .stream()
                                 .filter(RevolverHttpApiConfig::isWhitelist)
-                                .map(a -> "apis/" + service.getService() + "/" + a.getPath())
+                                .map(a -> "apis/callback/" + service.getService() + "/" + a.getPath())
                                 .collect(Collectors.toSet()))
                         .flatMap(Collection::stream)
                         .collect(Collectors.toSet());
@@ -239,7 +239,7 @@ public class App extends Application<AppConfig> {
                                                                    RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("dynamic")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url("apis/callback/" + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
@@ -257,7 +257,7 @@ public class App extends Application<AppConfig> {
                                                                   RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("static")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url("apis/callback/" + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
@@ -274,7 +274,7 @@ public class App extends Application<AppConfig> {
             private PrimerAuthorization primerAutoAuthorization(RevolverHttpApiConfig apiConfig, RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("auto")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url("apis/callback/" + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
