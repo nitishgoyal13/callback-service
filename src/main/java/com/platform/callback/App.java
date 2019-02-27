@@ -18,7 +18,6 @@ import io.dropwizard.actors.config.RMQConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
 import io.dropwizard.checkmate.CheckmateBundle;
 import io.dropwizard.checkmate.model.CheckmateBundleConfiguration;
-import io.dropwizard.configuration.ConfigurationSourceProvider;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryBundle;
@@ -64,6 +63,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class App extends Application<AppConfig> {
 
+    private static RoseyConfigSourceProvider roseyConfigSourceProvider;
+
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {
         bootstrap.addBundle(new OorBundle<AppConfig>() {
@@ -72,38 +73,60 @@ public class App extends Application<AppConfig> {
                 return false;
             }
         });
-        ConfigurationSourceProvider configurationSourceProvider = new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(),
-                                                                                                 new EnvironmentVariableSubstitutor()
-        );
+        roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", System.getenv("APP_NAME"));
         String localConfigStr = System.getenv("localConfig");
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
-        if(localConfig) {
+       /* if(localConfig) {
             bootstrap.setConfigurationSourceProvider(
                     new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
         } else {
-            bootstrap.setConfigurationSourceProvider(new SubstitutingSourceProvider(new RoseyConfigSourceProvider("callback", "callback"),
-                                                                                    new EnvironmentVariableSubstitutor()
-            ));
+            bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
+        }*/
+        //TODO Delete later
+        bootstrap.setConfigurationSourceProvider(
+                new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
+
+        ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
+        //TODO Revert later
+        if(!localConfig) {
+            serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
+                @Override
+                protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
+                    return configuration.getDiscovery();
+                }
+
+                @Override
+                protected String getServiceName(AppConfig configuration) {
+                    return configuration.getAppName();
+                }
+
+                @Override
+                protected int getPort(AppConfig configuration) {
+                    return configuration.getDiscovery()
+                            .getPublishedPort();
+                }
+
+            };
+        } else {
+            serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
+                @Override
+                protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
+                    return configuration.getDiscovery();
+                }
+
+                @Override
+                protected String getServiceName(AppConfig configuration) {
+                    return configuration.getAppName();
+                }
+
+                @Override
+                protected int getPort(AppConfig configuration) {
+                    return configuration.getDiscovery()
+                            .getPublishedPort();
+                }
+
+            };
         }
-
-        ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
-            @Override
-            protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
-                return configuration.getDiscovery();
-            }
-
-            @Override
-            protected String getServiceName(AppConfig configuration) {
-                return configuration.getAppName();
-            }
-
-            @Override
-            protected int getPort(AppConfig configuration) {
-                return configuration.getDiscovery()
-                        .getPublishedPort();
-            }
-
-        };
         bootstrap.addBundle(serviceDiscoveryBundle);
 
 
@@ -128,8 +151,8 @@ public class App extends Application<AppConfig> {
             public ConfigSource getConfigSource() {
                 return () -> {
                     try {
-                        return configurationSourceProvider.open("config/local.yml");
-                    } catch (IOException e) {
+                        return roseyConfigSourceProvider.fetchRemoteConfig();
+                    } catch (Exception e) {
                         e.printStackTrace();
 
                     }

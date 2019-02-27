@@ -6,7 +6,7 @@
 
     <groupId>com.platform.callback.service</groupId>
     <artifactId>callback-service</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
 
     <name>callback-service</name>
     <url>https://github.com/nitishgoyal13/callback-service</url>
@@ -305,7 +305,13 @@
         <dependency>
             <groupId>com.phonepe.platform</groupId>
             <artifactId>rosey-dropwizard-config</artifactId>
-            <version>${rosey.dropwizard.config.version}</version>
+            <version>1.1-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.dropwizard</groupId>
+                    <artifactId>dropwizard-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
