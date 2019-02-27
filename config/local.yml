@@ -84,7 +84,7 @@ primer:
     - callback/v1/request/status/{requestId}
     - callback/v1/request/ack/{requestId}
     - callback/v1/response/{requestId}
-    - apis/users/foxtrot/v1/tables
+    - apis/callback/users/foxtrot/v1/tables
 
 revolver:
   hystrixStreamPath: /hystrix.stream
