@@ -6,7 +6,7 @@
 
     <groupId>com.platform.callback.service</groupId>
     <artifactId>callback-service</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
 
     <name>callback-service</name>
     <url>https://github.com/nitishgoyal13/callback-service</url>
