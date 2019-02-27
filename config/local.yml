@@ -17,14 +17,14 @@ checkmate:
   clockSkew: 120
   algorithm: AES/ECB/PKCS5Padding
   whiteList:
-    - revolver/v1/callback/{requestId}
-    - revolver/dashboard
-    - revolver/v1/metadata/status
-    - revolver/v1/metadata/config
-    - revolver/v1/request/status/{requestId}
-    - revolver/v1/request/ack/{requestId}
-    - revolver/v1/response/{requestId}
-    - apis/foxtrot/foxtrot/v1/tables
+    - callback/v1/callback/{requestId}
+    - callback/dashboard
+    - callback/v1/metadata/status
+    - callback/v1/metadata/config
+    - callback/v1/request/status/{requestId}
+    - callback/v1/request/ack/{requestId}
+    - callback/v1/response/{requestId}
+    - apis/callback/foxtrot/foxtrot/v1/tables
 
 logging:
   level: WARN
@@ -63,29 +63,27 @@ riemann:
   prefix: local.callback
   pollingInterval: 30
   tags:
-    - foxtrot
+    - callback
 
 primer:
-  enabled: false
+  enabled: true
   endpoint:
-    type: ranger
-    namespace: phonepe
-    service: primer
-    environment: local
-    zookeeper: localhost:2181
+    type: simple
+    host: primer.traefik.stg.phonepe.com
+    port: 80
   cacheExpiry: 10
   cacheMaxSize: 100000
   clockSkew: 60
   prefix: Bearer
   privateKey: TwhjV5ujkvb41frpmqCve7ZfhqwSDMqOXe01DeDIsb2xCrW4bwfFnax9bi2uC9Kn
   whileListUrl:
-    - revolver/v1/callback/{requestId}
-    - revolver/dashboard
-    - revolver/v1/metadata/status
-    - revolver/v1/metadata/config
-    - revolver/v1/request/status/{requestId}
-    - revolver/v1/request/ack/{requestId}
-    - revolver/v1/response/{requestId}
+    - callback/v1/callback/{requestId}
+    - callback/dashboard
+    - callback/v1/metadata/status
+    - callback/v1/metadata/config
+    - callback/v1/request/status/{requestId}
+    - callback/v1/request/ack/{requestId}
+    - callback/v1/response/{requestId}
     - apis/users/foxtrot/v1/tables
 
 revolver:
@@ -149,3 +147,74 @@ revolver:
               concurrency: 2
               timeout: 20000
           callbackQueueId: foxtrot-queue
+    - type: http
+      service: payments
+      connectionPoolSize: 64
+      connectionKeepAliveInMillis: 60000
+      authEnabled: false
+      threadPoolGroupConfig:
+        threadPools:
+            - threadPoolName: payments-db
+              concurrency: 22
+              timeout: 3000
+            - threadPoolName: vault
+              concurrency: 12
+              timeout: 5000
+            - threadPoolName: upi-meta
+              concurrency: 20
+              timeout: 5000
+            - threadPoolName: extwallet-meta
+              concurrency: 12
+              timeout: 5000
+      runtime:
+        threadPool:
+          concurrency: 24
+          timeout: 1500
+      endpoint:
+        type: simple
+        host: paymentservice.traefik.stg.phonepe.com
+        port: 80
+      apis:
+        - api: get_transaction_limits
+          path: "v1/limits/transaction/{userId}"
+          methods:
+            - GET
+          runtime:
+            threadPool:
+              concurrency: 8
+              timeout: 3000
+          authorization:
+            type: dynamic
+            methods:
+              - GET
+            roles:
+              - consumer
+        - api: set_update_transaction_limits
+          path: "v1/limits/transaction/{userId}/set"
+          methods:
+            - POST
+          runtime:
+            threadPool:
+              concurrency: 3
+              timeout: 3000
+          authorization:
+            type: dynamic
+            methods:
+              - POST
+            roles:
+              - consumer
+        - api: ensemble_pay
+          path: "v1/ensemble/payment/pay"
+          methods:
+            - POST
+          runtime:
+            threadPool:
+              concurrency: 4
+              timeout: 200000
+          authorization:
+            type: auto
+            methods:
+              - POST
+            roles:
+              - consumer
+              - merchant

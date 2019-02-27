@@ -38,12 +38,12 @@ import javax.ws.rs.core.Response;
 @Slf4j
 @Data
 @Singleton
-public class RevolverConfigResource {
+public class CallbackConfigResource {
 
     private DynamicConfigHandler dynamicConfigHandler;
 
     @Builder
-    public RevolverConfigResource(DynamicConfigHandler dynamicConfigHandler) {
+    public CallbackConfigResource(DynamicConfigHandler dynamicConfigHandler) {
         this.dynamicConfigHandler = dynamicConfigHandler;
     }
 
