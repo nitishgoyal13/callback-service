@@ -48,7 +48,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -183,7 +182,7 @@ public class App extends Application<AppConfig> {
                         .map(service -> ((RevolverHttpServiceConfig)service).getApis()
                                 .stream()
                                 .filter(RevolverHttpApiConfig::isWhitelist)
-                                .map(a -> "apis/callback/" + service.getService() + "/" + a.getPath())
+                                .map(a -> "apis/" + service.getService() + "/" + a.getPath())
                                 .collect(Collectors.toSet()))
                         .flatMap(Collection::stream)
                         .collect(Collectors.toSet());
@@ -262,7 +261,7 @@ public class App extends Application<AppConfig> {
                                                                    RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("dynamic")
-                        .url("apis/callback/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
@@ -280,7 +279,7 @@ public class App extends Application<AppConfig> {
                                                                   RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("static")
-                        .url("apis/callback/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
@@ -297,7 +296,7 @@ public class App extends Application<AppConfig> {
             private PrimerAuthorization primerAutoAuthorization(RevolverHttpApiConfig apiConfig, RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("auto")
-                        .url("apis/callback/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
@@ -339,10 +338,8 @@ public class App extends Application<AppConfig> {
 
     @Override
     public void run(AppConfig configuration, Environment environment) throws Exception {
-        val executionEnv = System.getenv("CONFIG_ENV");
         val objectMapper = environment.getObjectMapper();
         val metrics = environment.metrics();
-
 
         log.info("InitializedManagedObject type: rabbitMqConnection");
 

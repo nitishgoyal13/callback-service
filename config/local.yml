@@ -12,8 +12,8 @@ server:
         timeZone: IST
 
 checkmate:
-  requestValidation: false
-  responseChecksum: false
+  requestValidation: true
+  responseChecksum: true
   clockSkew: 120
   algorithm: AES/ECB/PKCS5Padding
   whiteList:
