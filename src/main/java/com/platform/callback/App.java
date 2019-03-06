@@ -75,7 +75,8 @@ public class App extends Application<AppConfig> {
         String localConfigStr = System.getenv("localConfig");
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
         roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", System.getenv("APP_NAME"));
-        if(localConfig) {
+        //TODO Revert later
+        if(!localConfig) {
             bootstrap.setConfigurationSourceProvider(
                     new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
         } else {
