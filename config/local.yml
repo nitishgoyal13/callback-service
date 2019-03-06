@@ -24,7 +24,7 @@ checkmate:
     - callback/v1/request/status/{requestId}
     - callback/v1/request/ack/{requestId}
     - callback/v1/response/{requestId}
-    - apis/callback/foxtrot/foxtrot/v1/tables
+    - apis/foxtrotService/foxtrot/v1/tables
 
 logging:
   level: WARN
@@ -84,7 +84,7 @@ primer:
     - callback/v1/request/status/{requestId}
     - callback/v1/request/ack/{requestId}
     - callback/v1/response/{requestId}
-    - apis/callback/users/foxtrot/v1/tables
+    - apis/foxtrotService/foxtrot/v1/tables
 
 revolver:
   hystrixStreamPath: /hystrix.stream
@@ -99,7 +99,7 @@ revolver:
   callbackTimeout: 3000
   services:
     - type: http
-      service: foxtrot
+      service: foxtrotService
       connectionPoolSize: 5
       connectionKeepAliveInMillis: 60000
       authEnabled: false
