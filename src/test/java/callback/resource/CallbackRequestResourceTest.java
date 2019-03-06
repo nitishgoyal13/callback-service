@@ -54,18 +54,18 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
 
     @Test
     public void testGetRequestInSyncMode() {
-        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
+        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                .withHeader("Content-Type", "application/json")));
-        stubFor(get(urlEqualTo("/test/callback")).willReturn(aResponse().withStatus(200)
-                                                                     .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+                                                                        .withHeader("Content-Type", "application/json")));
         assertEquals(resources.client()
-                             .target("/apis/callback/test/v1/test")
+                             .target("/apis/test/v1/test")
                              .request()
                              .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
                                      .toString())
                              .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
                                      .toString())
-                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/callback/test/v1/test/callback")
+                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
                              .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
                              .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
                              .get()
@@ -76,16 +76,16 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     public void testGetRequestInASyncMode() {
         stubFor(get(urlEqualTo("/v1/test/async")).willReturn(aResponse().withStatus(200)
                                                                      .withHeader("Content-Type", "application/json")));
-        stubFor(get(urlEqualTo("/test/callback")).willReturn(aResponse().withStatus(200)
-                                                                     .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+                                                                        .withHeader("Content-Type", "application/json")));
         assertEquals(resources.client()
-                             .target("/apis/callback/test/v1/test/async")
+                             .target("/apis/test/v1/test/async")
                              .request()
                              .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
                                      .toString())
                              .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
                                      .toString())
-                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/callback/test/v1/test/callback")
+                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
                              .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
                              .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
                              .get()
@@ -94,16 +94,19 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
 
     @Test
     public void testPostRequest() {
-        stubFor(post(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
+        stubFor(post(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                 .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+                                                                        .withHeader("Content-Type", "application/json")));
+
         assertEquals(resources.client()
-                             .target("/apis/callback/test/v1/test")
+                             .target("/apis/test/v1/test")
                              .request()
                              .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
                                      .toString())
                              .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
                                      .toString())
-                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/callback/test/v1/test/callback")
+                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
                              .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
                              .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
                              .post(null)
@@ -112,16 +115,18 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
 
     @Test
     public void testPutRequest() {
-        stubFor(put(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
+        stubFor(put(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+                                                                        .withHeader("Content-Type", "application/json")));
         assertEquals(resources.client()
-                             .target("/apis/callback/test/v1/test")
+                             .target("/apis/test/v1/test")
                              .request()
                              .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
                                      .toString())
                              .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
                                      .toString())
-                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/callback/test/v1/test/callback")
+                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
                              .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
                              .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
                              .put(Entity.entity(Collections.singletonMap("test", "test"), MediaType.APPLICATION_JSON))
@@ -130,16 +135,19 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
 
     @Test
     public void testDeleteRequest() {
-        stubFor(delete(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
+        stubFor(delete(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                   .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+                                                                        .withHeader("Content-Type", "application/json")));
+
         assertEquals(202, resources.client()
-                .target("/apis/callback/test/v1/test")
+                .target("/apis/test/v1/test")
                 .request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
                         .toString())
                 .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
                         .toString())
-                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/callback/test/v1/test/callback")
+                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
                 .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
                 .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
                 .delete()
@@ -148,16 +156,19 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
 
     @Test
     public void testHeadRequest() {
-        stubFor(head(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
+        stubFor(head(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                 .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+                                                                        .withHeader("Content-Type", "application/json")));
+
         assertEquals(202, resources.client()
-                .target("/apis/callback/test/v1/test")
+                .target("/apis/test/v1/test")
                 .request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
                         .toString())
                 .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
                         .toString())
-                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/callback/test/v1/test/callback")
+                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
                 .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
                 .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
                 .head()
@@ -166,16 +177,16 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
 
     @Test
     public void testPatchRequest() {
-        stubFor(patch(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
+        stubFor(patch(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                  .withHeader("Content-Type", "application/json")));
         assertEquals(202, resources.client()
-                .target("/apis/callback/test/v1/test")
+                .target("/apis/test/v1/test")
                 .request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
                         .toString())
                 .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
                         .toString())
-                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/callback/test/v1/test/callback")
+                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
                 .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
                 .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
                 .method("PATCH")
@@ -184,16 +195,19 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
 
     @Test
     public void testOptionsRequest() {
-        stubFor(options(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
+        stubFor(options(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                    .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+                                                                        .withHeader("Content-Type", "application/json")));
+
         assertEquals(202, resources.client()
-                .target("/apis/callback/test/v1/test")
+                .target("/apis/test/v1/test")
                 .request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
                         .toString())
                 .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
                         .toString())
-                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/callback/test/v1/test/callback")
+                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
                 .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
                 .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
                 .options()

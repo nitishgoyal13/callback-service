@@ -72,60 +72,35 @@ public class App extends Application<AppConfig> {
                 return false;
             }
         });
-        roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", System.getenv("APP_NAME"));
         String localConfigStr = System.getenv("localConfig");
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
-       /* if(localConfig) {
+        roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", System.getenv("APP_NAME"));
+        if(localConfig) {
             bootstrap.setConfigurationSourceProvider(
                     new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
         } else {
             bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
-        }*/
-        //TODO Delete later
-        bootstrap.setConfigurationSourceProvider(
-                new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
+        }
 
         ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
         //TODO Revert later
-        if(!localConfig) {
-            serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
-                @Override
-                protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
-                    return configuration.getDiscovery();
-                }
+        serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
+            @Override
+            protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
+                return configuration.getDiscovery();
+            }
 
-                @Override
-                protected String getServiceName(AppConfig configuration) {
-                    return configuration.getAppName();
-                }
+            @Override
+            protected String getServiceName(AppConfig configuration) {
+                return configuration.getAppName();
+            }
 
-                @Override
-                protected int getPort(AppConfig configuration) {
-                    return configuration.getDiscovery()
-                            .getPublishedPort();
-                }
-
-            };
-        } else {
-            serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
-                @Override
-                protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
-                    return configuration.getDiscovery();
-                }
-
-                @Override
-                protected String getServiceName(AppConfig configuration) {
-                    return configuration.getAppName();
-                }
-
-                @Override
-                protected int getPort(AppConfig configuration) {
-                    return configuration.getDiscovery()
-                            .getPublishedPort();
-                }
-
-            };
-        }
+            @Override
+            protected int getPort(AppConfig configuration) {
+                return configuration.getDiscovery()
+                        .getPublishedPort();
+            }
+        };
         bootstrap.addBundle(serviceDiscoveryBundle);
 
 
