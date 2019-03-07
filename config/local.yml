@@ -25,6 +25,7 @@ checkmate:
     - callback/v1/request/ack/{requestId}
     - callback/v1/response/{requestId}
     - apis/foxtrotService/foxtrot/v1/tables
+    - apis/foxtrot/foxtrot/v1/tables
 
 logging:
   level: WARN
@@ -85,6 +86,7 @@ primer:
     - callback/v1/request/ack/{requestId}
     - callback/v1/response/{requestId}
     - apis/foxtrotService/foxtrot/v1/tables
+    - apis/foxtrot/foxtrot/v1/tables
 
 revolver:
   hystrixStreamPath: /hystrix.stream
@@ -97,6 +99,18 @@ revolver:
     zkConnectionString: "localhost:2181"
     namespace: local
   callbackTimeout: 3000
+  actors:
+    DEFAULT:
+      exchange: callback_messages
+      delayed: false
+      prefix: callback.actors
+      concurrency: 3
+      prefetchCount: 1
+      retryConfig:
+        type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+        maxAttempts: 6
+        multipier: 50
+        maxTimeBetweenRetries: 30s
   services:
     - type: http
       service: foxtrotService
@@ -108,17 +122,6 @@ revolver:
         host: localhost
         port: 17000
       actors:
-        DEFAULT:
-          exchange: callback_messages
-          delayed: false
-          prefix: callback.actors
-          concurrency: 3
-          prefetchCount: 1
-          retryConfig:
-            type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
-            maxAttempts: 6
-            multipier: 50
-            maxTimeBetweenRetries: 30s
         foxtrot-queue:
           exchange: callback_messages
           delayed: false
@@ -147,6 +150,31 @@ revolver:
               concurrency: 2
               timeout: 20000
           callbackQueueId: foxtrot-queue
+    - type: http
+      service: foxtrot
+      connectionPoolSize: 5
+      connectionKeepAliveInMillis: 60000
+      authEnabled: false
+      endpoint:
+        type: simple
+        host: localhost
+        port: 17000
+      apis:
+        - api: cw_schedule
+          path: "foxtrot/v1/tables"
+          methods:
+            - GET
+          authorization:
+            type: static
+            methods:
+              - GET
+            roles:
+              - internal-service
+          whitelist: true
+          runtime:
+            threadPool:
+              concurrency: 2
+              timeout: 20000
     - type: http
       service: payments
       connectionPoolSize: 64

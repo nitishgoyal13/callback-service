@@ -366,6 +366,12 @@ public class App extends Application<AppConfig> {
 
     private Map<String, ActorConfig> getActors(AppConfig configuration) {
         Map<String, ActorConfig> actors = Maps.newHashMap();
+
+        if(CollectionUtils.isNotEmpty(configuration.getRevolver()
+                                              .getActors())) {
+            actors.putAll(configuration.getRevolver()
+                                  .getActors());
+        }
         for(RevolverServiceConfig revolverServiceConfig : configuration.getRevolver()
                 .getServices()) {
             actors.putAll(CollectionUtils.nullSafeMap(revolverServiceConfig.getActors()));
