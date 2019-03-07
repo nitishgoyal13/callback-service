@@ -205,29 +205,29 @@ public class CallbackRequestResource {
     }
 
     private Response executeInline(final String service, final RevolverHttpApiConfig api, final RevolverHttpApiConfig.RequestMethod method,
-                                   final String path, final HttpHeaders headers,
-                                   final UriInfo uriInfo, final byte[] body) throws IOException, TimeoutException {
+                                   final String path, final HttpHeaders headers, final UriInfo uriInfo, final byte[] body)
+            throws IOException, TimeoutException {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
-        headers.getRequestHeaders().forEach(sanatizedHeaders::put);
+        headers.getRequestHeaders()
+                .forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
         val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
-        val response = httpCommand.execute(
-                RevolverHttpRequest.builder()
-                        .traceInfo(
-                                TraceInfo.builder()
-                                        .requestId(headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER))
-                                        .transactionId(headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER))
-                                        .timestamp(System.currentTimeMillis())
-                                        .build())
-                        .api(api.getApi())
-                        .service(service)
-                        .path(path)
-                        .method(method)
-                        .headers(sanatizedHeaders)
-                        .queryParams(uriInfo.getQueryParameters())
-                        .body(body)
-                        .build()
-                                          );
+        val response = httpCommand.execute(RevolverHttpRequest.builder()
+                                                   .traceInfo(TraceInfo.builder()
+                                                                      .requestId(headers.getHeaderString(
+                                                                              RevolversHttpHeaders.REQUEST_ID_HEADER))
+                                                                      .transactionId(
+                                                                              headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER))
+                                                                      .timestamp(System.currentTimeMillis())
+                                                                      .build())
+                                                   .api(api.getApi())
+                                                   .service(service)
+                                                   .path(path)
+                                                   .method(method)
+                                                   .headers(sanatizedHeaders)
+                                                   .queryParams(uriInfo.getQueryParameters())
+                                                   .body(body)
+                                                   .build());
         return transform(headers, response, api.getApi(), path, method);
     }
 
@@ -446,7 +446,7 @@ public class CallbackRequestResource {
                                                                                                                .transactionId(transactionId)
                                                                                                                .timestamp(
                                                                                                                        System.currentTimeMillis())
-                                                                                                                   .build())
+                                                                                                               .build())
                                                                                             .api(api.getApi())
                                                                                             .service(service)
                                                                                             .path(path)
@@ -471,7 +471,8 @@ public class CallbackRequestResource {
             persistenceProvider.saveResponse(requestId, response, ttl);
 
 
-            if(callMode != null && callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK)) {
+            if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
+                    RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
                 String queueId = api.getCallbackQueueId();
                 ActionMessagePublisher.publish(CallbackMessage.builder()
                                                        .requestId(requestId)
