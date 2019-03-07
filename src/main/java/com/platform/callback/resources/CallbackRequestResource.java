@@ -457,6 +457,7 @@ public class CallbackRequestResource {
                                                                                             .build());
         val result = response.get();
         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
+        saveResponse(requestId, result, RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC, mailBoxTtl, api);
         return transform(headers, result, api.getApi(), path, method);
     }
 
