@@ -54,6 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 @Path("/apis")
 @Slf4j
@@ -167,16 +168,10 @@ public class CallbackRequestResource {
         }
         val callMode = headers.getRequestHeaders()
                 .getFirst(RevolversHttpHeaders.CALL_MODE_HEADER);
-
-        if(callMode == null) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
-                                                                 headers.getMediaType() != null ? headers.getMediaType()
-                                                                         .toString() : MediaType.APPLICATION_JSON, jsonObjectMapper,
-                                                                 msgPackObjectMapper
-                                                                ))
-                    .build();
+        if(Strings.isNullOrEmpty(callMode)) {
+            return executeInline(service, apiMap.getApi(), method, path, headers, uriInfo, body);
         }
+
 
         switch (callMode.toUpperCase()) {
             case RevolverHttpCommand.CALL_MODE_CALLBACK:
@@ -208,6 +203,34 @@ public class CallbackRequestResource {
                         .toString() : MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper))
                 .build();
     }
+
+    private Response executeInline(final String service, final RevolverHttpApiConfig api, final RevolverHttpApiConfig.RequestMethod method,
+                                   final String path, final HttpHeaders headers,
+                                   final UriInfo uriInfo, final byte[] body) throws IOException, TimeoutException {
+        val sanatizedHeaders = new MultivaluedHashMap<String, String>();
+        headers.getRequestHeaders().forEach(sanatizedHeaders::put);
+        cleanHeaders(sanatizedHeaders, api);
+        val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
+        val response = httpCommand.execute(
+                RevolverHttpRequest.builder()
+                        .traceInfo(
+                                TraceInfo.builder()
+                                        .requestId(headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER))
+                                        .transactionId(headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER))
+                                        .timestamp(System.currentTimeMillis())
+                                        .build())
+                        .api(api.getApi())
+                        .service(service)
+                        .path(path)
+                        .method(method)
+                        .headers(sanatizedHeaders)
+                        .queryParams(uriInfo.getQueryParameters())
+                        .body(body)
+                        .build()
+                                          );
+        return transform(headers, response, api.getApi(), path, method);
+    }
+
 
     private Response transform(HttpHeaders headers, RevolverHttpResponse response, String api, String path,
                                RevolverHttpApiConfig.RequestMethod method) throws IOException {
