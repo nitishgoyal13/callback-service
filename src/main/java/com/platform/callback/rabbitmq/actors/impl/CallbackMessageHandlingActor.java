@@ -38,7 +38,7 @@ public class CallbackMessageHandlingActor extends MessageHandlingActor {
         }
         CallbackMessage callbackMessage = (CallbackMessage)message;
         try {
-            log.debug("Callback recon message:{}", message);
+            log.info("Callback recon message:{}", message);
             String requestId = callbackMessage.getRequestId();
             RevolverCallbackResponse revolverCallbackResponse = persistenceProvider.response(requestId);
             callbackHandler.handle(requestId, revolverCallbackResponse);
