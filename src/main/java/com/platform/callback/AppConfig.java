@@ -35,7 +35,7 @@ public class AppConfig extends Configuration {
     @JsonProperty("appName")
     @Getter
     @Setter
-    private String appName = "api-callback";
+    private String appName = "apicallback";
 
 
     @NotNull
