@@ -74,7 +74,8 @@ public class App extends Application<AppConfig> {
         });
         String localConfigStr = System.getenv("localConfig");
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
-        roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", System.getenv("APP_NAME"));
+        roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
+        System.out.println("Rosey config : " + roseyConfigSourceProvider);
         //TODO Revert later
          /* if(localConfig) {
             bootstrap.setConfigurationSourceProvider(
@@ -130,7 +131,7 @@ public class App extends Application<AppConfig> {
             public ConfigSource getConfigSource() {
                 return () -> {
                     try {
-                        return roseyConfigSourceProvider.fetchRemoteConfig();
+                        return null;
                     } catch (Exception e) {
                         e.printStackTrace();
 
