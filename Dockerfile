@@ -14,5 +14,7 @@ ENV CONFIG_PATH callback.yml
 ENV JAR_FILE phonepe-api-callback.jar
 
 ADD target/callback-service*.jar ${JAR_FILE}
+ADD certs certs
 
-CMD DNS_HOST=`ip r | awk '/default/{print $3}'` && printf "nameserver $DNS_HOST\n" > /etc/resolv.conf && export ZK_CONNECTION_STRING=${ZK_CONNECTION_STRING}; java -jar -XX:+${GC_ALGO-UseG1GC} -Xms${JAVA_PROCESS_MIN_HEAP-1g} -Xmx${JAVA_PROCESS_MAX_HEAP-1g} ${JAVA_OPTS} phonepe-api-callback.jar server /rosey/config.yml
+CMD sh -exc "curl -X GET --header 'Accept: application/x-yaml' http://${CONFIG_SERVICE_HOST_PORT}/v1/phonepe/callback/${CONFIG_ENV} > ${CONFIG_PATH} \
+    && java -jar -Duser.timezone=Asia/Kolkata ${JAVA_OPTS} -Xms${JAVA_PROCESS_MIN_HEAP-512m} -Xmx${JAVA_PROCESS_MAX_HEAP-512m} ${JAR_FILE} server /rosey/config.yml"
