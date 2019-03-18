@@ -45,11 +45,12 @@ logging:
 
 rmqConfig:
   brokers:
-    - host: localhost
-      port: 5672
+    - host: stg-rmqcallback001.phonepe.nm2
+      port: 5671
   threadPoolSize: 2
-  userName: guest
-  password: guest
+  userName: admin
+  password: admin
+  secure: true
 
 discovery:
   namespace: phonepe
