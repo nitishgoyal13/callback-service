@@ -75,6 +75,7 @@ public class App extends Application<AppConfig> {
         String localConfigStr = System.getenv("localConfig");
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
         roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
+        System.out.println("Rosey config : " + roseyConfigSourceProvider);
         //TODO Revert later
          /* if(localConfig) {
             bootstrap.setConfigurationSourceProvider(
@@ -87,7 +88,9 @@ public class App extends Application<AppConfig> {
                 new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
 
 
-        ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
+        ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
+        //TODO Revert later
+        serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
             protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
                 return configuration.getDiscovery();
