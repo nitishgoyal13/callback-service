@@ -147,6 +147,7 @@ public class CallbackRequestResource {
                                     final HttpHeaders headers, final UriInfo uriInfo, final byte[] body) throws Exception {
         val apiMap = RevolverBundle.matchPath(service, path);
         if(apiMap == null) {
+            log.error("BadRequest for service : " + service + " and path: " + path);
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                                                                  headers.getMediaType() != null ? headers.getMediaType()
@@ -176,6 +177,7 @@ public class CallbackRequestResource {
         switch (callMode.toUpperCase()) {
             case RevolverHttpCommand.CALL_MODE_CALLBACK:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
+                    log.error("Empty CALLBACK_URI_HEADER CALL_MODE_CALLBACK : " + service + ":" + path);
                     return Response.status(Response.Status.BAD_REQUEST)
                             .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                                                                          headers.getMediaType() != null ? headers.getMediaType()
@@ -188,6 +190,7 @@ public class CallbackRequestResource {
                         .isAsync(), callMode);
             case RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
+                    log.error("Empty CALLBACK_URI_HEADER CALL_MODE_CALLBACK_SYNC : " + service + ":" + path);
                     return Response.status(Response.Status.BAD_REQUEST)
                             .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                                                                          headers.getMediaType() != null ? headers.getMediaType()
@@ -208,6 +211,7 @@ public class CallbackRequestResource {
                                    final String path, final HttpHeaders headers, final UriInfo uriInfo, final byte[] body)
             throws IOException, TimeoutException {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
+        log.info("ExecutingInline : " + service + ":" + path);
         headers.getRequestHeaders()
                 .forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
@@ -310,6 +314,7 @@ public class CallbackRequestResource {
                                          final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync, final String callMode)
             throws Exception {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
+        log.info("Executing CALL_MODE_CALLBACK : " + service + ":" + path);
         headers.getRequestHeaders()
                 .forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
@@ -406,6 +411,7 @@ public class CallbackRequestResource {
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
                                          final UriInfo uriInfo, final byte[] body) throws Exception {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
+        log.info("Executing CALL_MODE_CALLBACK_SYNC : " + service + ":" + path);
         headers.getRequestHeaders()
                 .forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
@@ -474,7 +480,7 @@ public class CallbackRequestResource {
             if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
                     RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
                 String queueId = api.getCallbackQueueId();
-                log.info("QueueId : " + queueId );
+                log.info("QueueId : " + queueId);
                 ActionMessagePublisher.publish(CallbackMessage.builder()
                                                        .requestId(requestId)
                                                        .queueId(queueId)
