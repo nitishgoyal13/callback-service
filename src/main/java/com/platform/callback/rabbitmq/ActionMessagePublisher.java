@@ -51,7 +51,7 @@ public class ActionMessagePublisher {
             if(actor == null) {
                 return false;
             }
-            log.info("Published message : " + message);
+            log.info("Published message : " + message.toString());
             actor.publish(message);
             return true;
         } catch (Exception e) {
