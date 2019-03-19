@@ -471,10 +471,10 @@ public class CallbackRequestResource {
                     .build();
             persistenceProvider.saveResponse(requestId, response, ttl);
 
-
             if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
                     RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
                 String queueId = api.getCallbackQueueId();
+                log.info("QueueId : " + queueId );
                 ActionMessagePublisher.publish(CallbackMessage.builder()
                                                        .requestId(requestId)
                                                        .queueId(queueId)

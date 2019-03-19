@@ -346,6 +346,7 @@ public class App extends Application<AppConfig> {
         RMQConnection rmqConnection = new RMQConnection(configuration.getRmqConfig(), metrics,
                                                         Executors.newFixedThreadPool(rmqConcurrency.get())
         );
+        log.info("RMQConfig : " + configuration.getRmqConfig().toString());
         environment.lifecycle()
                 .manage(rmqConnection);
 
