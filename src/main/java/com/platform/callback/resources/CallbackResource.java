@@ -81,6 +81,8 @@ public class CallbackResource {
                     .build();
             val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
             val apiMap = RevolverBundle.matchPath(callbackRequest.getService(), callbackRequest.getApi());
+            log.info("Callbackservice : " + callbackRequest.getService() + ", api : " + callbackRequest.getApi() + ", api : " +
+                     apiMap.getApi());
             downstreamResponseHandler.saveResponse(requestId, response, callbackRequest.getMode(), mailboxTtl, apiMap.getApi());
             log.info("Callback added in the queue for processing");
             return Response.accepted()
