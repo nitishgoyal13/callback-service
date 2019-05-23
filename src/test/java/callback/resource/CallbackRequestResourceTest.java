@@ -21,6 +21,7 @@ import callback.BaseCallbackTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.platform.callback.resources.CallbackRequestResource;
+import com.platform.callback.services.DownstreamResponseHandler;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
@@ -45,7 +46,7 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     @ClassRule
     public static final ResourceTestRule resources = ResourceTestRule.builder()
             .addResource(new CallbackRequestResource(new ObjectMapper(), RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider,
-                                                     callbackHandler
+                                                     callbackHandler, new DownstreamResponseHandler(inMemoryPersistenceProvider)
             ))
             .build();
 

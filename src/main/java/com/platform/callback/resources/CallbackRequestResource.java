@@ -21,8 +21,7 @@ import com.codahale.metrics.annotation.Metered;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
-import com.platform.callback.rabbitmq.ActionMessagePublisher;
-import com.platform.callback.rabbitmq.actors.messages.CallbackMessage;
+import com.platform.callback.services.DownstreamResponseHandler;
 import io.dropwizard.jersey.PATCH;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.RevolverBundle;
@@ -41,6 +40,7 @@ import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -61,6 +61,7 @@ import java.util.concurrent.TimeoutException;
 @Singleton
 @Api(value = "Revolver Gateway", description = "Revolver api gateway endpoints")
 @Builder
+@AllArgsConstructor
 public class CallbackRequestResource {
 
     private static final Map<String, String> BAD_REQUEST_RESPONSE = Collections.singletonMap("message", "Bad Request");
@@ -70,14 +71,8 @@ public class CallbackRequestResource {
     private final ObjectMapper msgPackObjectMapper;
     private final PersistenceProvider persistenceProvider;
     private final InlineCallbackHandler callbackHandler;
+    private final DownstreamResponseHandler downstreamResponseHandler;
 
-    public CallbackRequestResource(final ObjectMapper jsonObjectMapper, final ObjectMapper msgPackObjectMapper,
-                                   final PersistenceProvider persistenceProvider, final InlineCallbackHandler callbackHandler) {
-        this.jsonObjectMapper = jsonObjectMapper;
-        this.msgPackObjectMapper = msgPackObjectMapper;
-        this.persistenceProvider = persistenceProvider;
-        this.callbackHandler = callbackHandler;
-    }
 
     @GET
     @Path(value = "/{service}/{path: .*}")
@@ -372,7 +367,7 @@ public class CallbackRequestResource {
                 persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
             } else {
                 persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
-                saveResponse(requestId, result, callMode, mailBoxTtl, api);
+                downstreamResponseHandler.saveResponse(requestId, getResponse(result), callMode, mailBoxTtl, api);
             }
             return transform(headers, result, api.getApi(), path, method);
         } else {
@@ -382,10 +377,10 @@ public class CallbackRequestResource {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
                     } else if(result.getStatusCode() == Response.Status.OK.getStatusCode()) {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
-                        saveResponse(requestId, result, callMode, mailBoxTtl, api);
+                        downstreamResponseHandler.saveResponse(requestId, getResponse(result), callMode, mailBoxTtl, api);
                     } else {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.ERROR, mailBoxTtl);
-                        saveResponse(requestId, result, callMode, mailBoxTtl, api);
+                        downstreamResponseHandler.saveResponse(requestId, getResponse(result), callMode, mailBoxTtl, api);
                     }
                 } catch (Exception e) {
                     log.error("Error setting request state for request id: {}", requestId, e);
@@ -407,11 +402,20 @@ public class CallbackRequestResource {
         }
     }
 
+    private RevolverCallbackResponse getResponse(RevolverHttpResponse result) {
+        return RevolverCallbackResponse.builder()
+                .body(result.getBody())
+                .headers(result.getHeaders())
+                .statusCode(result.getStatusCode())
+                .build();
+    }
+
     private Response executeCallbackSync(final String service, final RevolverHttpApiConfig api,
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
                                          final UriInfo uriInfo, final byte[] body) throws Exception {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
-        log.info("Executing CALL_MODE_CALLBACK_SYNC : " + service + ":" + path);
+        log.info("Executing CALL_MODE_CALLBACK_SYNC : " + service + ":" + path + ", with callback path : " + headers.getRequestHeaders()
+                .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
         headers.getRequestHeaders()
                 .forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
@@ -467,28 +471,4 @@ public class CallbackRequestResource {
         return transform(headers, result, api.getApi(), path, method);
     }
 
-    private void saveResponse(String requestId, RevolverHttpResponse result, final String callMode, final int ttl,
-                              RevolverHttpApiConfig api) {
-        try {
-            val response = RevolverCallbackResponse.builder()
-                    .body(result.getBody())
-                    .headers(result.getHeaders())
-                    .statusCode(result.getStatusCode())
-                    .build();
-            persistenceProvider.saveResponse(requestId, response, ttl);
-
-            if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
-                    RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
-                String queueId = api.getCallbackQueueId();
-                log.info("QueueId : " + queueId);
-                ActionMessagePublisher.publish(CallbackMessage.builder()
-                                                       .requestId(requestId)
-                                                       .queueId(queueId)
-                                                       .build());
-            }
-        } catch (Exception e) {
-            log.error("Error saving response!", e);
-        }
-
-    }
 }

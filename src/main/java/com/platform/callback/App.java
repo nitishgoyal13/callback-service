@@ -11,6 +11,8 @@ import com.platform.callback.rabbitmq.RMQWrapper;
 import com.platform.callback.rabbitmq.actors.impl.CallbackMessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
 import com.platform.callback.resources.CallbackRequestResource;
+import com.platform.callback.resources.CallbackResource;
+import com.platform.callback.services.DownstreamResponseHandler;
 import io.dropwizard.Application;
 import io.dropwizard.actors.RabbitmqActorBundle;
 import io.dropwizard.actors.actor.ActorConfig;
@@ -346,7 +348,8 @@ public class App extends Application<AppConfig> {
         RMQConnection rmqConnection = new RMQConnection(configuration.getRmqConfig(), metrics,
                                                         Executors.newFixedThreadPool(rmqConcurrency.get())
         );
-        log.info("RMQConfig : " + configuration.getRmqConfig().toString());
+        log.info("RMQConfig : " + configuration.getRmqConfig()
+                .toString());
         environment.lifecycle()
                 .manage(rmqConnection);
 
@@ -356,17 +359,30 @@ public class App extends Application<AppConfig> {
 
         ActionMessagePublisher.initialize(messageHandlingActorList);
 
+        DownstreamResponseHandler downstreamResponseHandler = DownstreamResponseHandler.builder()
+                .persistenceProvider(persistenceProvider)
+                .build();
+
         CallbackRequestResource callbackRequestResource = CallbackRequestResource.builder()
                 .callbackHandler(callbackHandler)
                 .jsonObjectMapper(objectMapper)
                 .persistenceProvider(persistenceProvider)
                 .msgPackObjectMapper(objectMapper)
+                .downstreamResponseHandler(downstreamResponseHandler)
+                .build();
+
+        CallbackResource callbackResource = CallbackResource.builder()
+                .callbackHandler(callbackHandler)
+                .persistenceProvider(persistenceProvider)
+                .downstreamResponseHandler(downstreamResponseHandler)
                 .build();
 
         environment.lifecycle()
                 .manage(new RMQWrapper(rmqConnection));
         environment.jersey()
                 .register(callbackRequestResource);
+        environment.jersey()
+                .register(callbackResource);
 
     }
 
