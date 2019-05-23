@@ -81,7 +81,7 @@ public class CallbackResource {
                     .build();
             val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
 
-            val apiMap = RevolverBundle.matchPath(callbackRequest.getService(), callbackRequest.getApi());
+            val apiMap = RevolverBundle.matchPath(callbackRequest.getService(), callbackRequest.getPath());
             log.info("Service : " + callbackRequest.getService() + ", path : " + callbackRequest.getPath());
             log.info("apiMap : " + apiMap);
             log.info("Callbackservice : " + callbackRequest.getService() + ", api : " + callbackRequest.getApi() + ", api : " +
