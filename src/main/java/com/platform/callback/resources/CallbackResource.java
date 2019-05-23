@@ -80,6 +80,7 @@ public class CallbackResource {
                     .statusCode(responseCode != null ? Integer.parseInt(responseCode) : Response.Status.OK.getStatusCode())
                     .build();
             val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
+
             val apiMap = RevolverBundle.matchPath(callbackRequest.getService(), callbackRequest.getApi());
             log.info("Callbackservice : " + callbackRequest.getService() + ", api : " + callbackRequest.getApi() + ", api : " +
                      apiMap.getApi() + ", mode : " + callbackRequest.getMode());
