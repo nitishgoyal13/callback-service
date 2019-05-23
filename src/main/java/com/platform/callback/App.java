@@ -86,10 +86,9 @@ public class App extends Application<AppConfig> {
             bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
         }*/
         //TODO Delete later
-        /*bootstrap.setConfigurationSourceProvider(
+        bootstrap.setConfigurationSourceProvider(
                 new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
-*/
-        bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
+
 
         ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
         //TODO Revert later
