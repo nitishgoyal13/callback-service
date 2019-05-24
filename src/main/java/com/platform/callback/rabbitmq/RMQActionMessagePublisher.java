@@ -20,7 +20,6 @@ import java.util.Map;
 @Slf4j
 @Builder
 @AllArgsConstructor
-@NoArgsConstructor
 public class RMQActionMessagePublisher {
 
     private static Map<String, MessageHandlingActor> actors;
