@@ -74,17 +74,13 @@ public class App extends Application<AppConfig> {
         String localConfigStr = System.getenv("localConfig");
         RoseyConfigSourceProvider roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
 
-        //TODO Revert later
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
-         /* if(localConfig) {
+        if(localConfig) {
             bootstrap.setConfigurationSourceProvider(
                     new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
         } else {
             bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
-        }*/
-        //TODO Delete later
-        bootstrap.setConfigurationSourceProvider(
-                new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
+        }
 
         ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
@@ -157,7 +153,7 @@ public class App extends Application<AppConfig> {
     }
 
     @Override
-    public void run(AppConfig configuration, Environment environment) throws Exception {
+    public void run(AppConfig configuration, Environment environment) {
         val objectMapper = environment.getObjectMapper();
         val metrics = environment.metrics();
 
