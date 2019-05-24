@@ -8,7 +8,7 @@
     <artifactId>callback-service</artifactId>
     <version>${project.version}</version>
 
-    <name>callback-service</name>
+    <name>Callback-Service</name>
     <url>https://github.com/nitishgoyal13/callback-service</url>
 
     <distributionManagement>
@@ -460,7 +460,8 @@
                                     <goal>push</goal>
                                 </goals>
                                 <configuration>
-                                    <imageName>docker.phonepe.com:5000/phonepe-api-callback:${project.version}</imageName>
+                                    <imageName>docker.phonepe.com:5000/phonepe-api-callback:${project.version}
+                                    </imageName>
                                 </configuration>
                             </execution>
                         </executions>

@@ -291,11 +291,10 @@ public class App extends Application<AppConfig> {
 
                     }
                     callbackPathConfig.getPathIds()
-                            .forEach(s -> {
-                                callbackPathConfig.getPathIds()
-                                        .forEach(path -> pathVsCallbackType.put(path, callbackConfig.getCallbackType()));
+                            .forEach(s -> callbackPathConfig.getPathIds()
+                                    .forEach(path -> pathVsCallbackType.put(path, callbackConfig.getCallbackType())));
 
-                            });
+
                 });
     }
 

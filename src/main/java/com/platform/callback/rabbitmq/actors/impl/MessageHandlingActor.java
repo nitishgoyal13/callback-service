@@ -50,7 +50,7 @@ public abstract class MessageHandlingActor {
         actorImpl.stop();
     }
 
-    public abstract <Message extends ActionMessage> boolean handle(Message message);
+    public abstract <M extends ActionMessage> boolean handle(M message);
 
 
 }
