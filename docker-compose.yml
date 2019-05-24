@@ -4,15 +4,15 @@ zookeeper:
   ports:
     - "2181:2181"
 
-#phonepe-api compose
-phonepe-api-callback:
-  container_name: phonepe-api-callback
+#api compose
+api-callback:
+  container_name: api-callback
   build: .
   ports:
    - "8080:8080"
    - "8081:8081"
   volumes:
-   - /var/log/phonepe-api
+   - /var/log/api-callback
   links:
    - zookeeper
 

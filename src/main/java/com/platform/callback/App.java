@@ -13,8 +13,8 @@ import com.platform.callback.config.CallbackConfig;
 import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
 import com.platform.callback.rabbitmq.RMQWrapper;
-import com.platform.callback.rabbitmq.actors.impl.RmqCallbackMessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
+import com.platform.callback.rabbitmq.actors.impl.RmqCallbackMessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import com.platform.callback.resources.CallbackRequestResource;
 import com.platform.callback.resources.CallbackResource;
@@ -73,10 +73,10 @@ public class App extends Application<AppConfig> {
             }
         });
         String localConfigStr = System.getenv("localConfig");
-        boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
         roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
-        System.out.println("Rosey config : " + roseyConfigSourceProvider);
+
         //TODO Revert later
+        boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
          /* if(localConfig) {
             bootstrap.setConfigurationSourceProvider(
                     new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
@@ -87,7 +87,6 @@ public class App extends Application<AppConfig> {
         bootstrap.setConfigurationSourceProvider(
                 new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
 
-        //TODO Revert later
         ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
             protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
@@ -238,11 +237,6 @@ public class App extends Application<AppConfig> {
         });
 
         return new RMQConnection(configuration.getRmqConfig(), metrics, Executors.newFixedThreadPool(rmqConcurrency.get()));
-        /*environment.lifecycle()
-                .manage(rmqConnection);
-
-
-        return rmqConnection;*/
     }
 
     public static CallbackConfig.CallbackType getCallbackType(String path) {
@@ -251,7 +245,6 @@ public class App extends Application<AppConfig> {
             return CallbackConfig.CallbackType.INLINE;
         }
 
-        //TODO To figure out a better way
         final CallbackConfig.CallbackType[] toReturn = new CallbackConfig.CallbackType[1];
         pathVsCallbackType.forEach((s, callbackType) -> {
             Pattern pattern = Pattern.compile(s);
@@ -266,12 +259,6 @@ public class App extends Application<AppConfig> {
             return CallbackConfig.CallbackType.INLINE;
         }
         return toReturn[0];
-
-        /*final val callbackType = pathVsCallbackType.entrySet()
-                .stream()
-                .filter(entry -> path.matches(entry.getKey()))
-                .findFirst();*/
-
     }
 
     public static String getQueueId(String path) {
@@ -279,7 +266,6 @@ public class App extends Application<AppConfig> {
         if(StringUtils.isEmpty(path)) {
             return ActionMessage.DEFAULT_QUEUE_ID;
         }
-        //TODO To figure out a better way
         final String[] toReturn = new String[1];
         pathVsQueueId.forEach((s, queueId) -> {
             Pattern pattern = Pattern.compile(s);
@@ -293,12 +279,6 @@ public class App extends Application<AppConfig> {
             return ActionMessage.DEFAULT_QUEUE_ID;
         }
         return toReturn[0];
-
-        /*final val callbackType = pathVsCallbackType.entrySet()
-                .stream()
-                .filter(entry -> path.matches(entry.getKey()))
-                .findFirst();*/
-
     }
 
     public static void initializeMeta(CallbackConfig callbackConfig) {

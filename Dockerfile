@@ -5,13 +5,13 @@ EXPOSE 8081
 EXPOSE 9010
 EXPOSE 5005
 
-VOLUME /var/log/phonepe-api-callback
+VOLUME /var/log/api-callback
 
 #Add Maxmind Database
 #ADD maxmind/GeoIP2-City.mmdb GeoIP2-City.mmdb
 
 ENV CONFIG_PATH callback.yml
-ENV JAR_FILE phonepe-api-callback.jar
+ENV JAR_FILE api-callback.jar
 
 ADD target/callback-service*.jar ${JAR_FILE}
 
