@@ -162,8 +162,7 @@ public class CallbackRequestResource {
                                                                         ))
                             .build();
                 }
-                return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi()
-                        .isAsync());
+                return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body);
             case RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                     log.error("Empty CALLBACK_URI_HEADER CALL_MODE_CALLBACK_SYNC : " + service + ":" + path);
@@ -305,7 +304,7 @@ public class CallbackRequestResource {
 
     private Response executeCommandAsync(final String service, final RevolverHttpApiConfig api,
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
-                                         final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync) throws Exception {
+                                         final UriInfo uriInfo, final byte[] body) throws Exception {
 
         val requestId = getRequestId(headers);
         val mailBoxTtl = getMailBoxTtl(headers);
@@ -317,7 +316,7 @@ public class CallbackRequestResource {
         CompletableFuture<RevolverHttpResponse> response = executeAndGetResponse(service, api, method, path, uriInfo, body, headers);
         //Async Downstream send accept on request path (Still circuit breaker will kick in. Keep circuit breaker
         // aggressive)
-        if(isDownstreamAsync) {
+        if(api.isAsync()) {
             return handleAsyncCall(api, method, path, headers, requestId, mailBoxTtl, response);
         } else {
             response.thenAcceptAsync(result -> {
