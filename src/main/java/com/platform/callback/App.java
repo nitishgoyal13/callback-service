@@ -13,7 +13,7 @@ import com.platform.callback.config.CallbackConfig;
 import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
 import com.platform.callback.rabbitmq.RMQWrapper;
-import com.platform.callback.rabbitmq.actors.impl.CallbackMessageHandlingActor;
+import com.platform.callback.rabbitmq.actors.impl.RmqCallbackMessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import com.platform.callback.resources.CallbackRequestResource;
@@ -219,7 +219,7 @@ public class App extends Application<AppConfig> {
         RMQConnection rmqConnection = initializeRmqConnection(configuration, environment, metrics);
         Map<String, ActorConfig> actors = callbackConfig.getActors();
         actors.forEach((a, actorConfig) -> rmqMessageHandlingActors.add(
-                new CallbackMessageHandlingActor(a, actorConfig, rmqConnection, objectMapper, callbackHandler, persistenceProvider)));
+                new RmqCallbackMessageHandlingActor(a, actorConfig, rmqConnection, objectMapper, callbackHandler, persistenceProvider)));
 
         RMQActionMessagePublisher.initialize(rmqMessageHandlingActors);
 

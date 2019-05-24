@@ -16,14 +16,14 @@ import lombok.extern.slf4j.Slf4j;
  Created by nitish.goyal on 14/02/19
  ***/
 @Slf4j
-public class CallbackMessageHandlingActor extends MessageHandlingActor {
+public class RmqCallbackMessageHandlingActor extends MessageHandlingActor {
 
     private final PersistenceProvider persistenceProvider;
     private final CallbackHandler callbackHandler;
 
     @Inject
-    public CallbackMessageHandlingActor(String queueId, ActorConfig config, RMQConnection connection, ObjectMapper mapper,
-                                        InlineCallbackHandler callbackHandler, PersistenceProvider persistenceProvider) {
+    public RmqCallbackMessageHandlingActor(String queueId, ActorConfig config, RMQConnection connection, ObjectMapper mapper,
+                                           InlineCallbackHandler callbackHandler, PersistenceProvider persistenceProvider) {
         super(queueId, config, connection, mapper);
         this.callbackHandler = callbackHandler;
         this.persistenceProvider = persistenceProvider;
@@ -34,6 +34,7 @@ public class CallbackMessageHandlingActor extends MessageHandlingActor {
     public boolean handle(ActionMessage message) {
 
         if(!(message instanceof CallbackMessage)) {
+            log.error("Message class : " + message.getClass());
             return false;
         }
         CallbackMessage callbackMessage = (CallbackMessage)message;

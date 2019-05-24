@@ -27,7 +27,7 @@ import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.config.CallbackConfig;
 import com.platform.callback.config.CallbackPathConfig;
 import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
-import com.platform.callback.rabbitmq.actors.impl.CallbackMessageHandlingActor;
+import com.platform.callback.rabbitmq.actors.impl.RmqCallbackMessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import com.platform.callback.services.DownstreamResponseHandler;
@@ -155,8 +155,8 @@ public class BaseCallbackTest {
         App.initializeMeta(callbackConfig);
 
         MessageHandlingActor messageHandlingActor = Mockito.spy(
-                new CallbackMessageHandlingActor(ActionMessage.DEFAULT_QUEUE_ID, actorConfig, rmqConnection, environment.getObjectMapper(),
-                                                 callbackHandler, inMemoryPersistenceProvider
+                new RmqCallbackMessageHandlingActor(ActionMessage.DEFAULT_QUEUE_ID, actorConfig, rmqConnection, environment.getObjectMapper(),
+                                                    callbackHandler, inMemoryPersistenceProvider
                 ));
         doNothing().when(messageHandlingActor)
                 .publish(ArgumentMatchers.any(ActionMessage.class));
