@@ -200,8 +200,7 @@ public class CallbackRequestResource {
         val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
         val response = httpCommand.execute(RevolverHttpRequest.builder()
                                                    .traceInfo(TraceInfo.builder()
-                                                                      .requestId(headers.getHeaderString(
-                                                                              RevolversHttpHeaders.REQUEST_ID_HEADER))
+                                                                      .requestId(getRequestId(headers))
                                                                       .transactionId(
                                                                               headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER))
                                                                       .timestamp(System.currentTimeMillis())
@@ -307,25 +306,15 @@ public class CallbackRequestResource {
     private Response executeCommandAsync(final String service, final RevolverHttpApiConfig api,
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
                                          final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync) throws Exception {
-        val sanatizedHeaders = new MultivaluedHashMap<String, String>();
-        log.info("Executing CALL_MODE_CALLBACK : " + service + ":" + path);
-        headers.getRequestHeaders()
-                .forEach(sanatizedHeaders::put);
-        cleanHeaders(sanatizedHeaders, api);
-        val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
-        val requestId = headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
-        val transactionId = headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
-        val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
-        val mailBoxTtl = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER) != null ? Integer.parseInt(
-                headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER)) : -1;
+
+        val requestId = getRequestId(headers);
+        val mailBoxTtl = getMailBoxTtl(headers);
         //Short circuit if it is a duplicate request
         if(persistenceProvider.exists(requestId)) {
             return getDuplicateRequestResponse(headers);
         }
-        saveRequest(service, api, path, headers, uriInfo, body, requestId, mailBoxId, mailBoxTtl);
-        CompletableFuture<RevolverHttpResponse> response = executeAndGetResponse(service, api, method, path, uriInfo, body,
-                                                                                 sanatizedHeaders, httpCommand, requestId, transactionId
-                                                                                );
+        saveRequest(service, api, path, headers, uriInfo, body, requestId);
+        CompletableFuture<RevolverHttpResponse> response = executeAndGetResponse(service, api, method, path, uriInfo, body, headers);
         //Async Downstream send accept on request path (Still circuit breaker will kick in. Keep circuit breaker
         // aggressive)
         if(isDownstreamAsync) {
@@ -354,28 +343,20 @@ public class CallbackRequestResource {
         }
     }
 
+    private String getRequestId(HttpHeaders headers) {
+        return headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
+    }
+
     private Response executeCallbackSync(final String service, final RevolverHttpApiConfig api,
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
                                          final UriInfo uriInfo, final byte[] body) throws Exception {
-        val sanatizedHeaders = new MultivaluedHashMap<String, String>();
-        log.info("Executing CALL_MODE_CALLBACK_SYNC : " + service + ":" + path + ", with callback path : " + headers.getRequestHeaders()
-                .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
-        headers.getRequestHeaders()
-                .forEach(sanatizedHeaders::put);
-        cleanHeaders(sanatizedHeaders, api);
-        val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
-        val requestId = headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
-        val transactionId = headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
-        val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
-        val mailBoxTtl = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER) != null ? Integer.parseInt(
-                headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER)) : -1;
+        val requestId = getRequestId(headers);
+        val mailBoxTtl = getMailBoxTtl(headers);
         if(persistenceProvider.exists(requestId))
             return getDuplicateRequestResponse(headers);
 
-        saveRequest(service, api, path, headers, uriInfo, body, requestId, mailBoxId, mailBoxTtl);
-        CompletableFuture<RevolverHttpResponse> response = executeAndGetResponse(service, api, method, path, uriInfo, body,
-                                                                                 sanatizedHeaders, httpCommand, requestId, transactionId
-                                                                                );
+        saveRequest(service, api, path, headers, uriInfo, body, requestId);
+        CompletableFuture<RevolverHttpResponse> response = executeAndGetResponse(service, api, method, path, uriInfo, body, headers);
         val result = response.get();
         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
         return transform(headers, result, api.getApi(), path, method);
@@ -391,10 +372,16 @@ public class CallbackRequestResource {
 
     private CompletableFuture<RevolverHttpResponse> executeAndGetResponse(String service, RevolverHttpApiConfig api,
                                                                           RevolverHttpApiConfig.RequestMethod method, String path,
-                                                                          UriInfo uriInfo, byte[] body,
-                                                                          MultivaluedHashMap<String, String> sanatizedHeaders,
-                                                                          RevolverHttpCommand httpCommand, String requestId,
-                                                                          String transactionId) {
+                                                                          UriInfo uriInfo, byte[] body, HttpHeaders headers) {
+        val sanatizedHeaders = new MultivaluedHashMap<String, String>();
+        headers.getRequestHeaders()
+                .forEach(sanatizedHeaders::put);
+        cleanHeaders(sanatizedHeaders, api);
+        val requestId = getRequestId(headers);
+
+        val transactionId = headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
+
+        val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
         return httpCommand.executeAsync(RevolverHttpRequest.builder()
                                                 .traceInfo(TraceInfo.builder()
                                                                    .requestId(requestId)
@@ -412,7 +399,10 @@ public class CallbackRequestResource {
     }
 
     private void saveRequest(String service, RevolverHttpApiConfig api, String path, HttpHeaders headers, UriInfo uriInfo, byte[] body,
-                             String requestId, String mailBoxId, int mailBoxTtl) throws Exception {
+                             String requestId) throws Exception {
+        val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
+        val mailBoxTtl = getMailBoxTtl(headers);
+
         persistenceProvider.saveRequest(requestId, mailBoxId, RevolverCallbackRequest.builder()
                 .api(api.getApi())
                 .mode(headers.getRequestHeaders()
@@ -427,6 +417,11 @@ public class CallbackRequestResource {
                 .queryParams(uriInfo.getQueryParameters())
                 .body(body)
                 .build(), mailBoxTtl);
+    }
+
+    private int getMailBoxTtl(HttpHeaders headers) {
+        return headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER) != null ? Integer.parseInt(
+                headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER)) : -1;
     }
 
     private void handleSyncCall(HttpHeaders headers, String requestId, int mailBoxTtl, RevolverHttpResponse result) throws Exception {
