@@ -34,6 +34,7 @@ public class DownstreamResponseHandler {
     public void saveResponse(String requestId, RevolverCallbackResponse response, String path) {
         try {
             final val callbackRequest = persistenceProvider.request(requestId);
+            log.info("Path : " + path);
             if(StringUtils.isEmpty(path)) {
                 log.info("Path is null, new path : " + callbackRequest.getCallbackUri());
                 path = callbackRequest.getCallbackUri();
