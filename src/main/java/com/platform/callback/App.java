@@ -247,6 +247,10 @@ public class App extends Application<AppConfig> {
 
     public static CallbackConfig.CallbackType getCallbackType(String path) {
 
+        if(StringUtils.isEmpty(path)) {
+            return CallbackConfig.CallbackType.INLINE;
+        }
+
         //TODO To figure out a better way
         final CallbackConfig.CallbackType[] toReturn = new CallbackConfig.CallbackType[1];
         pathVsCallbackType.forEach((s, callbackType) -> {
@@ -272,6 +276,9 @@ public class App extends Application<AppConfig> {
 
     public static String getQueueId(String path) {
 
+        if(StringUtils.isEmpty(path)) {
+            return ActionMessage.DEFAULT_QUEUE_ID;
+        }
         //TODO To figure out a better way
         final String[] toReturn = new String[1];
         pathVsQueueId.forEach((s, queueId) -> {
