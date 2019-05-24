@@ -57,7 +57,7 @@ public class CallbackResource {
 
     private final DownstreamResponseHandler downstreamResponseHandler;
 
-    @Path("/v1/handler/{requestId}")
+    @Path("/v1/callback/{requestId}")
     @POST
     @Metered
     @ApiOperation(value = "Callback for updating responses for a given mailbox request")

@@ -1,9 +1,9 @@
 package com.platform.callback.services;
 
 import com.platform.callback.App;
-import com.platform.callback.handler.CallbackHandler;
 import com.platform.callback.config.CallbackConfig;
 import com.platform.callback.exception.CallbackException;
+import com.platform.callback.handler.CallbackHandler;
 import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
 import com.platform.callback.rabbitmq.actors.messages.CallbackMessage;
 import com.utils.StringUtils;
@@ -35,6 +35,7 @@ public class DownstreamResponseHandler {
         try {
 
             CallbackConfig.CallbackType callbackType = App.getCallbackType(path);
+            log.info("CallbackType : " + callbackType);
 
             switch (callbackType) {
 
@@ -62,7 +63,7 @@ public class DownstreamResponseHandler {
                     break;
 
                 case INLINE:
-                    log.info("Executing handler InLine");
+                    log.info("Executing callback InLine");
                     callbackHandler.handle(requestId, response);
                     break;
             }

@@ -88,7 +88,7 @@ public class InlineCallbackHandler extends CallbackHandler {
             return;
         }
         if (Strings.isNullOrEmpty(request.getCallbackUri())) {
-            log.warn("Invalid handler uri: {}", requestId);
+            log.warn("Invalid callback uri: {}", requestId);
             return;
         }
         try {
@@ -106,7 +106,7 @@ public class InlineCallbackHandler extends CallbackHandler {
             int mailboxTtl = HeaderUtil.getTTL(request);
             persistenceProvider.saveResponse(requestId, response, mailboxTtl);
         } catch (Exception e) {
-            log.error("Invalid handler uri {} for request: {}", request.getCallbackUri(), requestId, e);
+            log.error("Invalid callback uri {} for request: {}", request.getCallbackUri(), requestId, e);
         }
     }
 
@@ -121,7 +121,7 @@ public class InlineCallbackHandler extends CallbackHandler {
                     .endpoint(callbackUri)
                     .build());
             if(null == httpCommandConfig) {
-                log.error("Invalid handler configuration for key: {} for request: {}", uri.toString(), requestId);
+                log.error("Invalid callback configuration for key: {} for request: {}", uri.toString(), requestId);
                 return;
             }
             final RevolverHttpCommand httpCommand = getCommand(httpCommandConfig);
@@ -145,16 +145,16 @@ public class InlineCallbackHandler extends CallbackHandler {
                         if (response.getStatusCode() >= 200 && response.getStatusCode() <= 210) {
                             log.info("Callback success: " + response.toString());
                         } else {
-                            log.error("Error from handler for request id: {} | host: {} | Status Code: {} | Response Body: {}",
+                            log.error("Error from callback for request id: {} | host: {} | Status Code: {} | Response Body: {}",
                                     requestId, uri.getHost(),
                                     response.getStatusCode(), response.getBody() != null ? new String(response.getBody()) : "NONE");
                         }
                     },
-                    (error) -> log.error("Error from handler for request id: {} | Error: {}", requestId,
+                    (error) -> log.error("Error from callback for request id: {} | Error: {}", requestId,
                             error));
             log.info("Callback complete for request id: {} in {} ms", requestId, (System.currentTimeMillis() - start));
         } catch (Exception e) {
-            log.error("Error making handler for: {} for request: {}", uri.toString(), requestId, e);
+            log.error("Error making callback for: {} for request: {}", uri.toString(), requestId, e);
         }
     }
 
