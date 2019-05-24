@@ -5,5 +5,8 @@ package com.platform.callback.utils;
  ***/
 public class ConstantUtils {
 
+    private ConstantUtils() {
+    }
+
     public static final String MESSAGE = "message";
 }

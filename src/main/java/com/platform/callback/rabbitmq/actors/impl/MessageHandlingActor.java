@@ -38,7 +38,7 @@ public abstract class MessageHandlingActor {
         this.queueId = queueId;
     }
 
-    public <CallbackMessage extends ActionMessage> void publish(CallbackMessage message) throws Exception {
+    public <M extends ActionMessage> void publish(M message) throws Exception {
         actorImpl.publish(message);
     }
 

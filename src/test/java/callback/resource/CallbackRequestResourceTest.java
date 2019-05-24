@@ -74,22 +74,22 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
 
     @Test
     public void testGetRequestInASyncMode() {
-        stubFor(get(urlEqualTo("/v1/test/async")).willReturn(aResponse().withStatus(200)
+        stubFor(get(urlEqualTo("/v1/test/async")).willReturn(aResponse().withStatus(202)
                                                                      .withHeader("Content-Type", "application/json")));
         stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
                                                                         .withHeader("Content-Type", "application/json")));
-        assertEquals(resources.client()
-                             .target("/apis/test/v1/test/async")
-                             .request()
-                             .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
-                                     .toString())
-                             .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
-                                     .toString())
-                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
-                             .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
-                             .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
-                             .get()
-                             .getStatus(), 200);
+        assertEquals(202, resources.client()
+                .target("/apis/test/v1/test/async")
+                .request()
+                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
+                        .toString())
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
+                        .toString())
+                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
+                .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
+                .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
+                .get()
+                .getStatus());
     }
 
     @Test
@@ -179,6 +179,9 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     public void testPatchRequest() {
         stubFor(patch(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                  .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+                                                                        .withHeader("Content-Type", "application/json")));
+
         assertEquals(202, resources.client()
                 .target("/apis/test/v1/test")
                 .request()

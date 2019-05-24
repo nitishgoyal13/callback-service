@@ -203,7 +203,6 @@ public class InlineCallbackHandler extends CallbackHandler {
                 type = "ranger_sharded";
                 apiName = discoveryData[2];
             default:
-                break;
         }
         RevolverHttpServiceConfig httpConfig = RevolverHttpServiceConfig.builder()
                 .authEnabled(false)

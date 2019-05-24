@@ -4,9 +4,7 @@ import com.google.common.collect.Maps;
 import com.platform.callback.exception.CallbackException;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.ws.rs.core.Response;
@@ -19,8 +17,11 @@ import java.util.Map;
  ***/
 @Slf4j
 @Builder
-@AllArgsConstructor
 public class RMQActionMessagePublisher {
+
+
+    private RMQActionMessagePublisher() {
+    }
 
     private static Map<String, MessageHandlingActor> actors;
 
@@ -33,7 +34,7 @@ public class RMQActionMessagePublisher {
         return Collections.unmodifiableMap(actors);
     }
 
-    public static <CallbackMessage extends ActionMessage> void publish(CallbackMessage message) {
+    public static <M extends ActionMessage> void publish(M message) {
         try {
             //TODO Implement retryer
             MessageHandlingActor actor = actors.get(message.getQueueId());

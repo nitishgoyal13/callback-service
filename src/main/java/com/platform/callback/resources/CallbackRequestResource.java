@@ -1,6 +1,7 @@
 package com.platform.callback.resources;
 
 import com.codahale.metrics.annotation.Metered;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -239,15 +240,42 @@ public class CallbackRequestResource {
                                                                                                ) ? MediaType.TEXT_HTML : response
                                                  .getHeaders()
                                                  .getFirst(HttpHeaders.CONTENT_TYPE);
-        final String requestMediaType = (headers != null && StringUtils.isEmpty(headers.getHeaderString(HttpHeaders.ACCEPT))) ? null : (
-                headers == null ? null : headers.getHeaderString(HttpHeaders.ACCEPT));
-        //If no no accept was specified in request; just send it as the same content type as response
-        //Also send it as the content type as response content type if there requested content type is the same;
+        final String requestMediaType = getRequestMediaType(headers);
+        /*If no no accept was specified in request; just send it as the same content type as response
+        Also send it as the content type as response content type if there requested content type is the same*/
         if(Strings.isNullOrEmpty(requestMediaType) || requestMediaType.equals(responseMediaType)) {
             httpResponse.header(HttpHeaders.CONTENT_TYPE, responseMediaType);
             httpResponse.entity(response.getBody());
             return httpResponse.build();
         }
+        Object responseData = getResponseData(response, responseMediaType);
+        handleResponse(response, httpResponse, requestMediaType, responseData);
+        return httpResponse.build();
+    }
+
+    private String getRequestMediaType(HttpHeaders headers) {
+        if(headers == null || StringUtils.isEmpty(headers.getHeaderString(HttpHeaders.ACCEPT))) {
+            return null;
+        }
+        return headers.getHeaderString(HttpHeaders.ACCEPT);
+    }
+
+    private void handleResponse(RevolverHttpResponse response, Response.ResponseBuilder httpResponse, String requestMediaType,
+                                Object responseData) throws JsonProcessingException {
+        if(responseData == null) {
+            httpResponse.entity(response.getBody());
+        } else {
+            if(requestMediaType.startsWith(MsgPackMediaType.APPLICATION_MSGPACK)) {
+                httpResponse.header(HttpHeaders.CONTENT_TYPE, MsgPackMediaType.APPLICATION_MSGPACK);
+                httpResponse.entity(msgPackObjectMapper.writeValueAsBytes(responseData));
+            } else {
+                httpResponse.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+                httpResponse.entity(jsonObjectMapper.writeValueAsBytes(responseData));
+            }
+        }
+    }
+
+    private Object getResponseData(RevolverHttpResponse response, String responseMediaType) throws IOException {
         Object responseData = null;
         if(responseMediaType.startsWith(MediaType.APPLICATION_JSON)) {
             final JsonNode jsonNode = jsonObjectMapper.readTree(response.getBody());
@@ -264,21 +292,7 @@ public class CallbackRequestResource {
                 responseData = msgPackObjectMapper.convertValue(jsonNode, Map.class);
             }
         }
-        if(responseData == null) {
-            httpResponse.entity(response.getBody());
-        } else {
-            if(requestMediaType.startsWith(MediaType.APPLICATION_JSON)) {
-                httpResponse.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
-                httpResponse.entity(jsonObjectMapper.writeValueAsBytes(responseData));
-            } else if(requestMediaType.startsWith(MsgPackMediaType.APPLICATION_MSGPACK)) {
-                httpResponse.header(HttpHeaders.CONTENT_TYPE, MsgPackMediaType.APPLICATION_MSGPACK);
-                httpResponse.entity(msgPackObjectMapper.writeValueAsBytes(responseData));
-            } else {
-                httpResponse.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
-                httpResponse.entity(jsonObjectMapper.writeValueAsBytes(responseData));
-            }
-        }
-        return httpResponse.build();
+        return responseData;
     }
 
 
@@ -292,8 +306,7 @@ public class CallbackRequestResource {
 
     private Response executeCommandAsync(final String service, final RevolverHttpApiConfig api,
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
-                                         final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync)
-            throws Exception {
+                                         final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync) throws Exception {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
         log.info("Executing CALL_MODE_CALLBACK : " + service + ":" + path);
         headers.getRequestHeaders()
@@ -466,7 +479,6 @@ public class CallbackRequestResource {
                                                                                             .build());
         val result = response.get();
         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
-        //saveResponse(requestId, result, RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC, mailBoxTtl, api);
         return transform(headers, result, api.getApi(), path, method);
     }
 

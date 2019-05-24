@@ -23,8 +23,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 /**
- * @author phaneesh
+ * @author nitishgoyal13
  */
+
 @Path("/revolver")
 @Slf4j
 @Singleton
