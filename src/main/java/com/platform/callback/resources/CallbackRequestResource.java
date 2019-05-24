@@ -1,20 +1,3 @@
-/*
- * Copyright 2016 Phaneesh Nagaraja <phaneesh.n@gmail.com>.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
 package com.platform.callback.resources;
 
 import com.codahale.metrics.annotation.Metered;
@@ -23,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.services.DownstreamResponseHandler;
+import com.utils.StringUtils;
 import io.dropwizard.jersey.PATCH;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.RevolverBundle;
@@ -56,17 +40,19 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
+import static com.platform.callback.utils.ConstantUtils.MESSAGE;
+
 @Path("/apis")
 @Slf4j
 @Singleton
-@Api(value = "Revolver Gateway", description = "Revolver api gateway endpoints")
+@Api(value = "Revolver Gateway")
 @Builder
 @AllArgsConstructor
 public class CallbackRequestResource {
 
-    private static final Map<String, String> BAD_REQUEST_RESPONSE = Collections.singletonMap("message", "Bad Request");
-    private static final Map<String, String> DUPLICATE_REQUEST_RESPONSE = Collections.singletonMap("message", "Duplicate");
-    private static Map<String, String> SERVICE_UNAVAILABLE_RESPONSE = Collections.singletonMap("message", "Service Unavailable");
+    private static final Map<String, String> BAD_REQUEST_RESPONSE = Collections.singletonMap(MESSAGE, "Bad Request");
+    private static final Map<String, String> DUPLICATE_REQUEST_RESPONSE = Collections.singletonMap(MESSAGE, "Duplicate");
+    private static final Map<String, String> SERVICE_UNAVAILABLE_RESPONSE = Collections.singletonMap(MESSAGE, "Service Unavailable");
     private final ObjectMapper jsonObjectMapper;
     private final ObjectMapper msgPackObjectMapper;
     private final PersistenceProvider persistenceProvider;
@@ -144,9 +130,7 @@ public class CallbackRequestResource {
         if(apiMap == null) {
             log.error("BadRequest for service : " + service + " and path: " + path);
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
-                                                                 headers.getMediaType() != null ? headers.getMediaType()
-                                                                         .toString() : MediaType.APPLICATION_JSON, jsonObjectMapper,
+                    .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE, getMediaType(headers), jsonObjectMapper,
                                                                  msgPackObjectMapper
                                                                 ))
                     .build();
@@ -155,9 +139,7 @@ public class CallbackRequestResource {
                 .getApi();
         if(RevolverBundle.apiStatus.containsKey(serviceKey) && !RevolverBundle.apiStatus.get(serviceKey)) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-                    .entity(ResponseTransformationUtil.transform(SERVICE_UNAVAILABLE_RESPONSE,
-                                                                 headers.getMediaType() != null ? headers.getMediaType()
-                                                                         .toString() : MediaType.APPLICATION_JSON, jsonObjectMapper,
+                    .entity(ResponseTransformationUtil.transform(SERVICE_UNAVAILABLE_RESPONSE, getMediaType(headers), jsonObjectMapper,
                                                                  msgPackObjectMapper
                                                                 ))
                     .build();
@@ -174,32 +156,36 @@ public class CallbackRequestResource {
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                     log.error("Empty CALLBACK_URI_HEADER CALL_MODE_CALLBACK : " + service + ":" + path);
                     return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
-                                                                         headers.getMediaType() != null ? headers.getMediaType()
-                                                                                 .toString() : MediaType.APPLICATION_JSON, jsonObjectMapper,
+                            .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE, getMediaType(headers), jsonObjectMapper,
                                                                          msgPackObjectMapper
                                                                         ))
                             .build();
                 }
                 return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi()
-                        .isAsync(), callMode);
+                        .isAsync());
             case RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                     log.error("Empty CALLBACK_URI_HEADER CALL_MODE_CALLBACK_SYNC : " + service + ":" + path);
                     return Response.status(Response.Status.BAD_REQUEST)
-                            .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
-                                                                         headers.getMediaType() != null ? headers.getMediaType()
-                                                                                 .toString() : MediaType.APPLICATION_JSON, jsonObjectMapper,
+                            .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE, getMediaType(headers), jsonObjectMapper,
                                                                          msgPackObjectMapper
                                                                         ))
                             .build();
                 }
                 return executeCallbackSync(service, apiMap.getApi(), method, path, headers, uriInfo, body);
+            default:
+                break;
         }
         return Response.status(Response.Status.BAD_REQUEST)
-                .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE, headers.getMediaType() != null ? headers.getMediaType()
-                        .toString() : MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper))
+                .entity(ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE, getMediaType(headers), jsonObjectMapper,
+                                                             msgPackObjectMapper
+                                                            ))
                 .build();
+    }
+
+    private String getMediaType(HttpHeaders headers) {
+        return headers.getMediaType() != null ? headers.getMediaType()
+                .toString() : MediaType.APPLICATION_JSON;
     }
 
     private Response executeInline(final String service, final RevolverHttpApiConfig api, final RevolverHttpApiConfig.RequestMethod method,
@@ -253,8 +239,8 @@ public class CallbackRequestResource {
                                                                                                ) ? MediaType.TEXT_HTML : response
                                                  .getHeaders()
                                                  .getFirst(HttpHeaders.CONTENT_TYPE);
-        final String requestMediaType = headers != null && Strings.isNullOrEmpty(
-                headers.getHeaderString(HttpHeaders.ACCEPT)) ? null : headers.getHeaderString(HttpHeaders.ACCEPT);
+        final String requestMediaType = (headers != null && StringUtils.isEmpty(headers.getHeaderString(HttpHeaders.ACCEPT))) ? null : (
+                headers == null ? null : headers.getHeaderString(HttpHeaders.ACCEPT));
         //If no no accept was specified in request; just send it as the same content type as response
         //Also send it as the content type as response content type if there requested content type is the same;
         if(Strings.isNullOrEmpty(requestMediaType) || requestMediaType.equals(responseMediaType)) {
@@ -306,7 +292,7 @@ public class CallbackRequestResource {
 
     private Response executeCommandAsync(final String service, final RevolverHttpApiConfig api,
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
-                                         final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync, final String callMode)
+                                         final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync)
             throws Exception {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
         log.info("Executing CALL_MODE_CALLBACK : " + service + ":" + path);
@@ -362,29 +348,11 @@ public class CallbackRequestResource {
         //Async Downstream send accept on request path (Still circuit breaker will kick in. Keep circuit breaker
         // aggressive)
         if(isDownstreamAsync) {
-            val result = response.get();
-            if(result.getStatusCode() == Response.Status.ACCEPTED.getStatusCode()) {
-                persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
-            } else {
-                persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
-                downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
-                        .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
-            }
-            return transform(headers, result, api.getApi(), path, method);
+            return handleAsyncCall(api, method, path, headers, requestId, mailBoxTtl, response);
         } else {
             response.thenAcceptAsync(result -> {
                 try {
-                    if(result.getStatusCode() == Response.Status.ACCEPTED.getStatusCode()) {
-                        persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
-                    } else if(result.getStatusCode() == Response.Status.OK.getStatusCode()) {
-                        persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
-                        downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
-                                .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
-                    } else {
-                        persistenceProvider.setRequestState(requestId, RevolverRequestState.ERROR, mailBoxTtl);
-                        downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
-                                .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
-                    }
+                    handleSyncCall(headers, requestId, mailBoxTtl, result);
                 } catch (Exception e) {
                     log.error("Error setting request state for request id: {}", requestId, e);
                 }
@@ -403,6 +371,34 @@ public class CallbackRequestResource {
                                                                 ))
                     .build();
         }
+    }
+
+    private void handleSyncCall(HttpHeaders headers, String requestId, int mailBoxTtl, RevolverHttpResponse result) throws Exception {
+        if(result.getStatusCode() == Response.Status.ACCEPTED.getStatusCode()) {
+            persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
+        } else if(result.getStatusCode() == Response.Status.OK.getStatusCode()) {
+            persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
+            downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
+                    .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
+        } else {
+            persistenceProvider.setRequestState(requestId, RevolverRequestState.ERROR, mailBoxTtl);
+            downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
+                    .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
+        }
+    }
+
+    private Response handleAsyncCall(RevolverHttpApiConfig api, RevolverHttpApiConfig.RequestMethod method, String path,
+                                     HttpHeaders headers, String requestId, int mailBoxTtl,
+                                     CompletableFuture<RevolverHttpResponse> response) throws Exception {
+        val result = response.get();
+        if(result.getStatusCode() == Response.Status.ACCEPTED.getStatusCode()) {
+            persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
+        } else {
+            persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
+            downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
+                    .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
+        }
+        return transform(headers, result, api.getApi(), path, method);
     }
 
     private RevolverCallbackResponse getResponse(RevolverHttpResponse result) {

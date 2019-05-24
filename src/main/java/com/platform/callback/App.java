@@ -59,7 +59,6 @@ import java.util.regex.Pattern;
 @Slf4j
 public class App extends Application<AppConfig> {
 
-    private static RoseyConfigSourceProvider roseyConfigSourceProvider;
 
     private static Map<String, String> pathVsQueueId = Maps.newHashMap();
     private static Map<String, CallbackConfig.CallbackType> pathVsCallbackType = Maps.newHashMap();
@@ -73,7 +72,7 @@ public class App extends Application<AppConfig> {
             }
         });
         String localConfigStr = System.getenv("localConfig");
-        roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
+        RoseyConfigSourceProvider roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
 
         //TODO Revert later
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
@@ -130,7 +129,7 @@ public class App extends Application<AppConfig> {
                     try {
                         return null;
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("Exception in getting source ", e);
 
                     }
                     return null;
@@ -178,10 +177,8 @@ public class App extends Application<AppConfig> {
         CallbackConfig callbackConfig = configuration.getCallbackConfig();
         initializeMeta(callbackConfig);
 
-        switch (callbackConfig.getCallbackType()) {
-            case RMQ:
-                setupRmq(configuration, environment, metrics, objectMapper, callbackHandler, persistenceProvider);
-                break;
+        if(CallbackConfig.CallbackType.RMQ.equals(callbackConfig.getCallbackType())) {
+            setupRmq(configuration, environment, metrics, objectMapper, callbackHandler, persistenceProvider);
         }
 
         DownstreamResponseHandler downstreamResponseHandler = DownstreamResponseHandler.builder()
@@ -215,7 +212,7 @@ public class App extends Application<AppConfig> {
 
         List<MessageHandlingActor> rmqMessageHandlingActors = Lists.newArrayList();
         CallbackConfig callbackConfig = configuration.getCallbackConfig();
-        RMQConnection rmqConnection = initializeRmqConnection(configuration, environment, metrics);
+        RMQConnection rmqConnection = initializeRmqConnection(configuration, metrics);
         Map<String, ActorConfig> actors = callbackConfig.getActors();
         actors.forEach((a, actorConfig) -> rmqMessageHandlingActors.add(
                 new RmqCallbackMessageHandlingActor(a, actorConfig, rmqConnection, objectMapper, callbackHandler, persistenceProvider)));
@@ -226,15 +223,14 @@ public class App extends Application<AppConfig> {
                 .manage(new RMQWrapper(rmqConnection));
     }
 
-    private RMQConnection initializeRmqConnection(AppConfig configuration, Environment environment, MetricRegistry metrics) {
+    private RMQConnection initializeRmqConnection(AppConfig configuration, MetricRegistry metrics) {
 
         Map<String, ActorConfig> actors = configuration.getCallbackConfig()
                 .getActors();
 
         AtomicInteger rmqConcurrency = new AtomicInteger();
-        actors.forEach((a, actorConfig) -> {
-            rmqConcurrency.addAndGet(actorConfig.getConcurrency());
-        });
+        actors.forEach((a, actorConfig) -> rmqConcurrency.addAndGet(actorConfig.getConcurrency()));
+
 
         return new RMQConnection(configuration.getRmqConfig(), metrics, Executors.newFixedThreadPool(rmqConcurrency.get()));
     }
@@ -291,16 +287,14 @@ public class App extends Application<AppConfig> {
                 .forEach(callbackPathConfig -> {
                     if(CallbackConfig.CallbackType.RMQ.equals(callbackConfig.getCallbackType())) {
                         callbackPathConfig.getPathIds()
-                                .forEach(s -> {
-                                    pathVsQueueId.put(s, callbackPathConfig.getQueueId());
-                                });
+                                .forEach(s -> pathVsQueueId.put(s, callbackPathConfig.getQueueId()));
+
                     }
                     callbackPathConfig.getPathIds()
                             .forEach(s -> {
                                 callbackPathConfig.getPathIds()
-                                        .forEach(path -> {
-                                            pathVsCallbackType.put(path, callbackConfig.getCallbackType());
-                                        });
+                                        .forEach(path -> pathVsCallbackType.put(path, callbackConfig.getCallbackType()));
+
                             });
                 });
     }
@@ -319,8 +313,9 @@ public class App extends Application<AppConfig> {
             case "aerospike":
                 AerospikeConnectionManager.init((AerospikeMailBoxConfig)revolverConfig.getMailBox());
                 return new AeroSpikePersistenceProvider((AerospikeMailBoxConfig)revolverConfig.getMailBox(), environment.getObjectMapper());
+            default:
+                throw new IllegalArgumentException("Invalid mailbox configuration");
         }
-        throw new IllegalArgumentException("Invalid mailbox configuration");
     }
 
 }

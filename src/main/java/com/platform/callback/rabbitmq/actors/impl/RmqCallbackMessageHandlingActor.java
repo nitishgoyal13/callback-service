@@ -10,12 +10,16 @@ import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
 /***
  Created by nitish.goyal on 14/02/19
  ***/
 @Slf4j
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class RmqCallbackMessageHandlingActor extends MessageHandlingActor {
 
     private final PersistenceProvider persistenceProvider;

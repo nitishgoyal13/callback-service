@@ -58,18 +58,18 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
                                                                .withHeader("Content-Type", "application/json")));
         stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
                                                                         .withHeader("Content-Type", "application/json")));
-        assertEquals(resources.client()
-                             .target("/apis/test/v1/test")
-                             .request()
-                             .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
-                                     .toString())
-                             .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
-                                     .toString())
-                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
-                             .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
-                             .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
-                             .get()
-                             .getStatus(), 202);
+        assertEquals(202, resources.client()
+                .target("/apis/test/v1/test")
+                .request()
+                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
+                        .toString())
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
+                        .toString())
+                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
+                .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
+                .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
+                .get()
+                .getStatus());
     }
 
     @Test
@@ -99,18 +99,18 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
         stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
                                                                         .withHeader("Content-Type", "application/json")));
 
-        assertEquals(resources.client()
-                             .target("/apis/test/v1/test")
-                             .request()
-                             .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
-                                     .toString())
-                             .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
-                                     .toString())
-                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
-                             .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
-                             .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
-                             .post(null)
-                             .getStatus(), 202);
+        assertEquals(202, resources.client()
+                .target("/apis/test/v1/test")
+                .request()
+                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
+                        .toString())
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
+                        .toString())
+                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
+                .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
+                .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
+                .post(null)
+                .getStatus());
     }
 
     @Test
@@ -119,18 +119,18 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
                                                                .withHeader("Content-Type", "application/json")));
         stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
                                                                         .withHeader("Content-Type", "application/json")));
-        assertEquals(resources.client()
-                             .target("/apis/test/v1/test")
-                             .request()
-                             .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
-                                     .toString())
-                             .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
-                                     .toString())
-                             .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
-                             .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
-                             .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
-                             .put(Entity.entity(Collections.singletonMap("test", "test"), MediaType.APPLICATION_JSON))
-                             .getStatus(), 202);
+        assertEquals(202, resources.client()
+                .target("/apis/test/v1/test")
+                .request()
+                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
+                        .toString())
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
+                        .toString())
+                .header(RevolversHttpHeaders.CALLBACK_URI_HEADER, "/apis/test/v1/test/callback")
+                .header(RevolversHttpHeaders.CALL_MODE_HEADER, RevolverHttpCommand.CALL_MODE_CALLBACK)
+                .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, "123")
+                .put(Entity.entity(Collections.singletonMap("test", "test"), MediaType.APPLICATION_JSON))
+                .getStatus());
     }
 
     @Test

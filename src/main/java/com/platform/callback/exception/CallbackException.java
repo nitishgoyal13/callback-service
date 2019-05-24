@@ -16,7 +16,7 @@ import javax.ws.rs.core.Response;
 @EqualsAndHashCode(callSuper = true)
 public class CallbackException extends RuntimeException {
 
-    private Response.Status status;
+    private final Response.Status status;
 
-    private String message;
+    private final String message;
 }

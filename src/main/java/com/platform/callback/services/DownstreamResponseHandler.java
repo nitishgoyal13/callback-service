@@ -70,6 +70,9 @@ public class DownstreamResponseHandler {
                     log.info("Executing callback InLine");
                     callbackHandler.handle(requestId, response);
                     break;
+
+                default:
+                    break;
             }
         } catch (Exception e) {
             log.error("Error saving response : ", e);

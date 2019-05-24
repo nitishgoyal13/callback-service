@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.platform.callback.rabbitmq.ActionMessageVisitor;
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -33,5 +36,5 @@ public abstract class ActionMessage {
         this.type = type;
     }
 
-    abstract public <T> T accept(ActionMessageVisitor<T> visitor);
+    public abstract <T> T accept(ActionMessageVisitor<T> visitor);
 }

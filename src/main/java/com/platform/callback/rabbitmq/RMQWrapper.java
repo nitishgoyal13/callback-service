@@ -1,9 +1,12 @@
 package com.platform.callback.rabbitmq;
 
 import com.google.inject.Inject;
+import com.platform.callback.exception.RMQException;
 import io.dropwizard.actors.connectivity.RMQConnection;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.ws.rs.core.Response;
 
 /**
  * This is a proxy class to ensure guice picks up the RMQ connection class.
@@ -27,7 +30,9 @@ public class RMQWrapper implements Managed {
                         messageHandlingActor.start();
                     } catch (Exception e) {
                         log.error("Error starting actor : " + messageHandlingActor.getQueueId(), e);
-                        throw new RuntimeException("Error starting actor : " + messageHandlingActor.getQueueId(), e);
+                        throw new RMQException(Response.Status.INTERNAL_SERVER_ERROR,
+                                               "Error starting actor : " + messageHandlingActor.getQueueId() + e
+                        );
                     }
                 });
     }
@@ -41,7 +46,9 @@ public class RMQWrapper implements Managed {
                         messageHandlingActor.stop();
                     } catch (Exception e) {
                         log.error("Error stopping actor : " + messageHandlingActor.getQueueId(), e);
-                        throw new RuntimeException("Error stopping actor : " + messageHandlingActor.getQueueId(), e);
+                        throw new RMQException(Response.Status.INTERNAL_SERVER_ERROR,
+                                               "Error stopping actor : " + messageHandlingActor.getQueueId() + e
+                        );
                     }
                 });
     }
