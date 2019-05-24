@@ -2,13 +2,13 @@ package com.platform.callback.rabbitmq.actors.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
+import com.platform.callback.handler.CallbackHandler;
+import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import com.platform.callback.rabbitmq.actors.messages.CallbackMessage;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
-import io.dropwizard.revolver.callback.CallbackHandler;
-import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,7 +44,7 @@ public class CallbackMessageHandlingActor extends MessageHandlingActor {
             callbackHandler.handle(requestId, revolverCallbackResponse);
             return true;
         } catch (Exception e) {
-            log.error("Error in callback message reading", e);
+            log.error("Error in handler message reading", e);
             throw e;
         }
     }

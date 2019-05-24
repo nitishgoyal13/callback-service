@@ -11,22 +11,6 @@ server:
       - type: console
         timeZone: IST
 
-checkmate:
-  requestValidation: true
-  responseChecksum: true
-  clockSkew: 120
-  algorithm: AES/ECB/PKCS5Padding
-  whiteList:
-    - callback/v1/callback/{requestId}
-    - callback/dashboard
-    - callback/v1/metadata/status
-    - callback/v1/metadata/config
-    - callback/v1/request/status/{requestId}
-    - callback/v1/request/ack/{requestId}
-    - callback/v1/response/{requestId}
-    - apis/foxtrotService/foxtrot/v1/tables
-    - apis/foxtrot/foxtrot/v1/tables
-
 logging:
   level: WARN
   # Logger-specific levels.pay
@@ -66,39 +50,12 @@ riemann:
   tags:
     - callback
 
-primer:
-  enabled: true
-  endpoint:
-    type: simple
-    host: primer.traefik.stg.phonepe.com
-    port: 80
-  cacheExpiry: 10
-  cacheMaxSize: 100000
-  clockSkew: 60
-  prefix: Bearer
-  privateKey: TwhjV5ujkvb41frpmqCve7ZfhqwSDMqOXe01DeDIsb2xCrW4bwfFnax9bi2uC9Kn
-  whileListUrl:
-    - callback/v1/callback/{requestId}
-    - callback/dashboard
-    - callback/v1/metadata/status
-    - callback/v1/metadata/config
-    - callback/v1/request/status/{requestId}
-    - callback/v1/request/ack/{requestId}
-    - callback/v1/response/{requestId}
-    - apis/foxtrotService/foxtrot/v1/tables
-    - apis/foxtrot/foxtrot/v1/tables
-
-revolver:
-  hystrixStreamPath: /hystrix.stream
-  mailBox:
-    type: in_memory
-  clientConfig:
-    clientName: local-api
-  serviceResolverConfig:
-    useCurator: false
-    zkConnectionString: "localhost:2181"
-    namespace: local
-  callbackTimeout: 3000
+callbackConfig:
+  callbackType: RMQ
+  callbackPathConfigs:
+    - pathIds:
+      - "/foxtrot/*"
+      queueId: DEFAULT
   actors:
     DEFAULT:
       exchange: callback_messages
@@ -111,6 +68,18 @@ revolver:
         maxAttempts: 6
         multipier: 50
         maxTimeBetweenRetries: 30s
+
+revolver:
+  hystrixStreamPath: /hystrix.stream
+  mailBox:
+    type: in_memory
+  clientConfig:
+    clientName: local-api
+  serviceResolverConfig:
+    useCurator: false
+    zkConnectionString: "localhost:2181"
+    namespace: local
+  callbackTimeout: 3000
   services:
     - type: http
       service: foxtrotService
@@ -121,18 +90,6 @@ revolver:
         type: simple
         host: localhost
         port: 17000
-      actors:
-        foxtrot-queue:
-          exchange: callback_messages
-          delayed: false
-          prefix: callback.actors
-          concurrency: 3
-          prefetchCount: 1
-          retryConfig:
-            type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
-            maxAttempts: 6
-            multipier: 50
-            maxTimeBetweenRetries: 30s
       apis:
         - api: cw_schedule
           path: "foxtrot/v1/tables"
@@ -149,7 +106,6 @@ revolver:
             threadPool:
               concurrency: 2
               timeout: 20000
-          callbackQueueId: foxtrot-queue
     - type: http
       service: foxtrot
       connectionPoolSize: 5
@@ -246,3 +202,4 @@ revolver:
             roles:
               - consumer
               - merchant
+

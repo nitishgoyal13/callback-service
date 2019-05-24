@@ -2,11 +2,11 @@ package com.platform.callback.rabbitmq;
 
 import com.google.common.collect.Maps;
 import com.platform.callback.exception.CallbackException;
-import com.platform.callback.exception.ResponseCode;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Map;
  Created by nitish.goyal on 05/02/19
  ***/
 @Slf4j
-public class ActionMessagePublisher {
+public class RMQActionMessagePublisher {
 
     private static Map<String, MessageHandlingActor> actors;
 
@@ -35,11 +35,10 @@ public class ActionMessagePublisher {
             MessageHandlingActor actor = actors.get(message.getQueueId());
             actor.publish(message);
             return true;
-
         } catch (Exception e) {
             String errorMessage = String.format("Error in publishing in rmq:%s", message.getQueueId());
             log.error(errorMessage, e);
-            throw new CallbackException(ResponseCode.QUEUE_EXCEPTION, errorMessage);
+            throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, errorMessage);
 
         }
     }
@@ -47,6 +46,7 @@ public class ActionMessagePublisher {
     public static <Message extends ActionMessage> Boolean publish(Message message) {
         try {
 
+            //TODO Implement retryer
             MessageHandlingActor actor = actors.get(message.getQueueId());
             if(actor == null) {
                 return false;
@@ -57,7 +57,7 @@ public class ActionMessagePublisher {
         } catch (Exception e) {
             String errorMessage = String.format("Error in publishing in rmq:%s ", message.getQueueId());
             log.error(errorMessage, e);
-            throw new CallbackException(ResponseCode.QUEUE_EXCEPTION, errorMessage);
+            throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, errorMessage);
         }
     }
 }

@@ -22,10 +22,15 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.platform.callback.rabbitmq.ActionMessagePublisher;
+import com.platform.callback.App;
+import com.platform.callback.handler.InlineCallbackHandler;
+import com.platform.callback.config.CallbackConfig;
+import com.platform.callback.config.CallbackPathConfig;
+import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
 import com.platform.callback.rabbitmq.actors.impl.CallbackMessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
+import com.platform.callback.services.DownstreamResponseHandler;
 import io.dropwizard.Configuration;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
@@ -34,7 +39,6 @@ import io.dropwizard.jersey.setup.JerseyEnvironment;
 import io.dropwizard.jetty.MutableServletContextHandler;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.revolver.RevolverBundle;
-import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.config.*;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
@@ -64,22 +68,12 @@ import static org.mockito.Mockito.*;
 @Slf4j
 public class BaseCallbackTest {
 
-    private final HealthCheckRegistry healthChecks = mock(HealthCheckRegistry.class);
-    private final JerseyEnvironment jerseyEnvironment = mock(JerseyEnvironment.class);
-    private final LifecycleEnvironment lifecycleEnvironment = new LifecycleEnvironment();
-    protected static final Environment environment = mock(Environment.class);
-    protected final Bootstrap<?> bootstrap = mock(Bootstrap.class);
-    protected final Configuration configuration = mock(Configuration.class);
-    protected final RMQConnection rmqConnection = mock(RMQConnection.class);
-
-    protected static final ObjectMapper mapper = new ObjectMapper();
-
-    private MetricRegistry metricRegistry = new MetricRegistry();
-
     protected static final InMemoryPersistenceProvider inMemoryPersistenceProvider = new InMemoryPersistenceProvider();
+    protected static final ObjectMapper mapper = new ObjectMapper();
+    protected static InlineCallbackHandler callbackHandler;
+    protected static DownstreamResponseHandler downstreamResponseHandler;
 
-
-    protected final RevolverBundle<Configuration> bundle = new RevolverBundle<Configuration>() {
+    final RevolverBundle<Configuration> bundle = new RevolverBundle<Configuration>() {
 
         @Override
         public RevolverConfig getRevolverConfig(final Configuration configuration) {
@@ -98,11 +92,30 @@ public class BaseCallbackTest {
             return null;
         }
     };
+    final Configuration configuration = mock(Configuration.class);
 
-    protected RevolverConfig revolverConfig;
+    private static final Environment environment = mock(Environment.class);
+    private final Bootstrap<?> bootstrap = mock(Bootstrap.class);
+    private final HealthCheckRegistry healthChecks = mock(HealthCheckRegistry.class);
+    private final JerseyEnvironment jerseyEnvironment = mock(JerseyEnvironment.class);
+    private final LifecycleEnvironment lifecycleEnvironment = new LifecycleEnvironment();
+    private final RMQConnection rmqConnection = mock(RMQConnection.class);
 
-    protected static InlineCallbackHandler callbackHandler;
 
+    private MetricRegistry metricRegistry = new MetricRegistry();
+    private static RevolverConfig revolverConfig;
+
+    static {
+        revolverConfig = getRevolverConfig();
+        callbackHandler = InlineCallbackHandler.builder()
+                .persistenceProvider(inMemoryPersistenceProvider)
+                .revolverConfig(revolverConfig)
+                .build();
+        downstreamResponseHandler = DownstreamResponseHandler.builder()
+                .callbackHandler(callbackHandler)
+                .persistenceProvider(inMemoryPersistenceProvider)
+                .build();
+    }
 
     @Before
     public void setup() throws Exception {
@@ -114,6 +127,58 @@ public class BaseCallbackTest {
         when(bootstrap.getObjectMapper()).thenReturn(mapper);
         when(environment.metrics()).thenReturn(metricRegistry);
         when(environment.getApplicationContext()).thenReturn(new MutableServletContextHandler());
+
+        bundle.initialize(bootstrap);
+        bundle.run(configuration, environment);
+
+        lifecycleEnvironment.getManagedObjects()
+                .forEach(object -> {
+                    try {
+                        object.start();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+
+
+        List<MessageHandlingActor> messageHandlingActorList = Lists.newArrayList();
+
+        Map<String, ActorConfig> actorConfigMap = Maps.newHashMap();
+        ActorConfig actorConfig = ActorConfig.builder()
+                .concurrency(2)
+                .delayed(false)
+                .build();
+        actorConfigMap.put(ActionMessage.DEFAULT_QUEUE_ID, actorConfig);
+
+
+        CallbackConfig callbackConfig = getCallbackConfig(actorConfigMap);
+        App.initializeMeta(callbackConfig);
+
+        MessageHandlingActor messageHandlingActor = Mockito.spy(
+                new CallbackMessageHandlingActor(ActionMessage.DEFAULT_QUEUE_ID, actorConfig, rmqConnection, environment.getObjectMapper(),
+                                                 callbackHandler, inMemoryPersistenceProvider
+                ));
+        doNothing().when(messageHandlingActor)
+                .publish(ArgumentMatchers.any(ActionMessage.class));
+        messageHandlingActorList.add(messageHandlingActor);
+        RMQActionMessagePublisher.initialize(messageHandlingActorList);
+    }
+
+    private CallbackConfig getCallbackConfig(Map<String, ActorConfig> actorConfigMap) {
+
+        List<CallbackPathConfig> callbackPathConfigs = Lists.newArrayList();
+        callbackPathConfigs.add(CallbackPathConfig.builder()
+                                        .pathIds(Lists.newArrayList("/apis/test/v1/test/*", ""))
+                                        .queueId(ActionMessage.DEFAULT_QUEUE_ID)
+                                        .build());
+        return CallbackConfig.builder()
+                .actors(actorConfigMap)
+                .callbackType(CallbackConfig.CallbackType.RMQ)
+                .callbackPathConfigs(callbackPathConfigs)
+                .build();
+    }
+
+    private static RevolverConfig getRevolverConfig() {
 
         val simpleEndpoint = new SimpleEndpointSpec();
         simpleEndpoint.setHost("localhost");
@@ -130,7 +195,8 @@ public class BaseCallbackTest {
                 .timeout(100)
                 .build();
 
-        revolverConfig = RevolverConfig.builder()
+
+        return RevolverConfig.builder()
                 .mailBox(InMemoryMailBoxConfig.builder()
                                  .build())
                 .serviceResolverConfig(ServiceResolverConfig.builder()
@@ -179,7 +245,6 @@ public class BaseCallbackTest {
                                               .method(RevolverHttpApiConfig.RequestMethod.HEAD)
                                               .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
                                               .path("{version}/test/async")
-                                              .async(true)
                                               .runtime(HystrixCommandConfig.builder()
                                                                .threadPool(ThreadPoolConfig.builder()
                                                                                    .concurrency(1)
@@ -281,39 +346,5 @@ public class BaseCallbackTest {
                                               .build())
                                  .build())
                 .build();
-
-        bundle.initialize(bootstrap);
-
-        bundle.run(configuration, environment);
-
-        lifecycleEnvironment.getManagedObjects()
-                .forEach(object -> {
-                    try {
-                        object.start();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-        callbackHandler = InlineCallbackHandler.builder()
-                .persistenceProvider(inMemoryPersistenceProvider)
-                .revolverConfig(revolverConfig)
-                .build();
-
-        List<MessageHandlingActor> messageHandlingActorList = Lists.newArrayList();
-        Map<String, ActorConfig> actorConfigMap = Maps.newHashMap();
-        ActorConfig actorConfig = ActorConfig.builder()
-                .concurrency(2)
-                .delayed(false)
-                .build();
-        actorConfigMap.put(ActionMessage.DEFAULT_QUEUE_ID, actorConfig);
-
-        MessageHandlingActor messageHandlingActor = Mockito.spy(
-                new CallbackMessageHandlingActor(ActionMessage.DEFAULT_QUEUE_ID, actorConfig, rmqConnection, environment.getObjectMapper(),
-                                                 callbackHandler, inMemoryPersistenceProvider
-                ));
-        doNothing().when(messageHandlingActor)
-                .publish(ArgumentMatchers.any(ActionMessage.class));
-        messageHandlingActorList.add(messageHandlingActor);
-        ActionMessagePublisher.initialize(messageHandlingActorList);
     }
 }

@@ -1,44 +1,41 @@
 package com.platform.callback;
 
+import com.codahale.metrics.MetricRegistry;
 import com.collections.CollectionUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
 import com.phonepe.rosey.dwconfig.RoseyConfigSourceProvider;
-import com.platform.callback.rabbitmq.ActionMessagePublisher;
+import com.platform.callback.handler.InlineCallbackHandler;
+import com.platform.callback.config.AppConfig;
+import com.platform.callback.config.CallbackConfig;
+import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
 import com.platform.callback.rabbitmq.RMQWrapper;
 import com.platform.callback.rabbitmq.actors.impl.CallbackMessageHandlingActor;
 import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
+import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import com.platform.callback.resources.CallbackRequestResource;
 import com.platform.callback.resources.CallbackResource;
 import com.platform.callback.services.DownstreamResponseHandler;
+import com.utils.StringUtils;
 import io.dropwizard.Application;
 import io.dropwizard.actors.RabbitmqActorBundle;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.config.RMQConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
-import io.dropwizard.checkmate.CheckmateBundle;
-import io.dropwizard.checkmate.model.CheckmateBundleConfiguration;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryBundle;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryConfiguration;
 import io.dropwizard.oor.OorBundle;
-import io.dropwizard.primer.PrimerBundle;
-import io.dropwizard.primer.model.PrimerAuthorization;
-import io.dropwizard.primer.model.PrimerAuthorizationMatrix;
-import io.dropwizard.primer.model.PrimerBundleConfiguration;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.aeroapike.AerospikeConnectionManager;
-import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
-import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.filters.RevolverRequestFilter;
 import io.dropwizard.revolver.handler.ConfigSource;
-import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
-import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -50,13 +47,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 /**
  * Created by nitishgoyal13 on 31/1/19.
@@ -65,6 +60,9 @@ import java.util.stream.Collectors;
 public class App extends Application<AppConfig> {
 
     private static RoseyConfigSourceProvider roseyConfigSourceProvider;
+
+    private static Map<String, String> pathVsQueueId = Maps.newHashMap();
+    private static Map<String, CallbackConfig.CallbackType> pathVsCallbackType = Maps.newHashMap();
 
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {
@@ -89,10 +87,8 @@ public class App extends Application<AppConfig> {
         bootstrap.setConfigurationSourceProvider(
                 new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
 
-
-        ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle;
         //TODO Revert later
-        serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
+        ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
             protected ServiceDiscoveryConfiguration getRangerConfiguration(AppConfig configuration) {
                 return configuration.getDiscovery();
@@ -144,157 +140,6 @@ public class App extends Application<AppConfig> {
             }
         });
 
-        bootstrap.addBundle(new PrimerBundle<AppConfig>() {
-
-            @Override
-            public CuratorFramework getCurator(AppConfig configuration) {
-                return serviceDiscoveryBundle.getCurator();
-            }
-
-            @Override
-            public PrimerBundleConfiguration getPrimerConfiguration(AppConfig apiConfiguration) {
-                return apiConfiguration.getPrimer();
-            }
-
-            @Override
-            public Set<String> withWhiteList(AppConfig apiConfiguration) {
-                return apiConfiguration.getRevolver()
-                        .getServices()
-                        .stream()
-                        .filter(service -> service instanceof RevolverHttpServiceConfig)
-                        .map(service -> ((RevolverHttpServiceConfig)service).getApis()
-                                .stream()
-                                .filter(RevolverHttpApiConfig::isWhitelist)
-                                .map(a -> "apis/" + service.getService() + "/" + a.getPath())
-                                .collect(Collectors.toSet()))
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toSet());
-            }
-
-            @Override
-            public PrimerAuthorizationMatrix withAuthorization(AppConfig apiConfiguration) {
-                val staticAuth = apiConfiguration.getRevolver()
-                        .getServices()
-                        .stream()
-                        .filter(service -> service instanceof RevolverHttpServiceConfig)
-                        .map(service -> ((RevolverHttpServiceConfig)service).getApis()
-                                .stream()
-                                .filter(a -> !a.isWhitelist())
-                                .filter(this::checkStaticAuthorization)
-                                .map(a -> primerStaticAuthorization(a, (RevolverHttpServiceConfig)service))
-                                .collect(Collectors.toSet()))
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
-                val dynamicAuth = apiConfiguration.getRevolver()
-                        .getServices()
-                        .stream()
-                        .filter(service -> service instanceof RevolverHttpServiceConfig)
-                        .map(service -> ((RevolverHttpServiceConfig)service).getApis()
-                                .stream()
-                                .filter(a -> !a.isWhitelist())
-                                .filter(this::checkDynamicAuthorization)
-                                .map(a -> primerDynamicAuthorization(a, ((RevolverHttpServiceConfig)service)))
-                                .collect(Collectors.toSet()))
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
-                val autoAuth = apiConfiguration.getRevolver()
-                        .getServices()
-                        .stream()
-                        .filter(service -> service instanceof RevolverHttpServiceConfig)
-                        .map(service -> ((RevolverHttpServiceConfig)service).getApis()
-                                .stream()
-                                .filter(a -> !a.isWhitelist())
-                                .filter(this::checkAutoAuthorization)
-                                .map(a -> primerAutoAuthorization(a, ((RevolverHttpServiceConfig)service)))
-                                .collect(Collectors.toSet()))
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toList());
-                if(apiConfiguration.getPrimer() != null && apiConfiguration.getPrimer()
-                                                                   .getAuthorizations() != null) {
-                    if(apiConfiguration.getPrimer()
-                               .getAuthorizations()
-                               .getAutoAuthorizations() != null) {
-                        autoAuth.addAll(apiConfiguration.getPrimer()
-                                                .getAuthorizations()
-                                                .getAutoAuthorizations());
-                    }
-                    if(apiConfiguration.getPrimer()
-                               .getAuthorizations()
-                               .getStaticAuthorizations() != null) {
-                        autoAuth.addAll(apiConfiguration.getPrimer()
-                                                .getAuthorizations()
-                                                .getStaticAuthorizations());
-                    }
-                    if(apiConfiguration.getPrimer()
-                               .getAuthorizations()
-                               .getAuthorizations() != null) {
-                        dynamicAuth.addAll(apiConfiguration.getPrimer()
-                                                   .getAuthorizations()
-                                                   .getAuthorizations());
-                    }
-                }
-                return PrimerAuthorizationMatrix.builder()
-                        .staticAuthorizations(staticAuth)
-                        .authorizations(dynamicAuth)
-                        .autoAuthorizations(autoAuth)
-                        .build();
-            }
-
-            private PrimerAuthorization primerDynamicAuthorization(RevolverHttpApiConfig apiConfig,
-                                                                   RevolverHttpServiceConfig serviceConfig) {
-                return PrimerAuthorization.builder()
-                        .type("dynamic")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
-                        .methods(apiConfig.getAuthorization()
-                                         .getMethods())
-                        .roles(apiConfig.getAuthorization()
-                                       .getRoles())
-                        .build();
-            }
-
-            private boolean checkDynamicAuthorization(RevolverHttpApiConfig apiConfig) {
-                return (!apiConfig.isWhitelist() && apiConfig.getAuthorization() != null && apiConfig.getAuthorization()
-                        .getType()
-                        .equals("dynamic"));
-            }
-
-            private PrimerAuthorization primerStaticAuthorization(RevolverHttpApiConfig apiConfig,
-                                                                  RevolverHttpServiceConfig serviceConfig) {
-                return PrimerAuthorization.builder()
-                        .type("static")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
-                        .methods(apiConfig.getAuthorization()
-                                         .getMethods())
-                        .roles(apiConfig.getAuthorization()
-                                       .getRoles())
-                        .build();
-            }
-
-            private boolean checkStaticAuthorization(RevolverHttpApiConfig apiConfig) {
-                return (!apiConfig.isWhitelist() && apiConfig.getAuthorization() != null && apiConfig.getAuthorization()
-                        .getType()
-                        .equals("static"));
-            }
-
-            private PrimerAuthorization primerAutoAuthorization(RevolverHttpApiConfig apiConfig, RevolverHttpServiceConfig serviceConfig) {
-                return PrimerAuthorization.builder()
-                        .type("auto")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
-                        .methods(apiConfig.getAuthorization()
-                                         .getMethods())
-                        .roles(apiConfig.getAuthorization()
-                                       .getRoles())
-                        .build();
-            }
-
-            private boolean checkAutoAuthorization(RevolverHttpApiConfig apiConfig) {
-                return (!apiConfig.isWhitelist() && apiConfig.getAuthorization() != null && apiConfig.getAuthorization()
-                        .getType()
-                        .equals("auto"));
-            }
-
-        });
-
         RabbitmqActorBundle<AppConfig> rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {
             @Override
             protected RMQConfig getConfig(AppConfig appConfig) {
@@ -311,12 +156,6 @@ public class App extends Application<AppConfig> {
             }
         });
 
-        bootstrap.addBundle(new CheckmateBundle<AppConfig>(serviceDiscoveryBundle.getCurator()) {
-            @Override
-            public CheckmateBundleConfiguration getCheckmateConfiguration(AppConfig apiConfiguration) {
-                return apiConfiguration.getCheckmate();
-            }
-        });
     }
 
     @Override
@@ -337,30 +176,18 @@ public class App extends Application<AppConfig> {
                 .register(new RevolverRequestFilter(configuration.getRevolver()));
 
 
-        List<MessageHandlingActor> messageHandlingActorList = Lists.newArrayList();
+        CallbackConfig callbackConfig = configuration.getCallbackConfig();
+        initializeMeta(callbackConfig);
 
-        Map<String, ActorConfig> actors = getActors(configuration);
-        AtomicInteger rmqConcurrency = new AtomicInteger();
-        actors.forEach((a, actorConfig) -> {
-            rmqConcurrency.addAndGet(actorConfig.getConcurrency());
-        });
-
-        RMQConnection rmqConnection = new RMQConnection(configuration.getRmqConfig(), metrics,
-                                                        Executors.newFixedThreadPool(rmqConcurrency.get())
-        );
-        log.info("RMQConfig : " + configuration.getRmqConfig()
-                .toString());
-        environment.lifecycle()
-                .manage(rmqConnection);
-
-        actors.forEach((a, actorConfig) -> messageHandlingActorList.add(
-                new CallbackMessageHandlingActor(a, actorConfig, rmqConnection, objectMapper, callbackHandler, persistenceProvider)));
-
-
-        ActionMessagePublisher.initialize(messageHandlingActorList);
+        switch (callbackConfig.getCallbackType()) {
+            case RMQ:
+                setupRmq(configuration, environment, metrics, objectMapper, callbackHandler, persistenceProvider);
+                break;
+        }
 
         DownstreamResponseHandler downstreamResponseHandler = DownstreamResponseHandler.builder()
                 .persistenceProvider(persistenceProvider)
+                .callbackHandler(callbackHandler)
                 .build();
 
         CallbackRequestResource callbackRequestResource = CallbackRequestResource.builder()
@@ -377,8 +204,6 @@ public class App extends Application<AppConfig> {
                 .downstreamResponseHandler(downstreamResponseHandler)
                 .build();
 
-        environment.lifecycle()
-                .manage(new RMQWrapper(rmqConnection));
         environment.jersey()
                 .register(callbackRequestResource);
         environment.jersey()
@@ -386,20 +211,114 @@ public class App extends Application<AppConfig> {
 
     }
 
-    private Map<String, ActorConfig> getActors(AppConfig configuration) {
-        Map<String, ActorConfig> actors = Maps.newHashMap();
+    private void setupRmq(AppConfig configuration, Environment environment, MetricRegistry metrics, ObjectMapper objectMapper,
+                          InlineCallbackHandler callbackHandler, PersistenceProvider persistenceProvider) {
 
-        if(CollectionUtils.isNotEmpty(configuration.getRevolver()
-                                              .getActors())) {
-            actors.putAll(configuration.getRevolver()
-                                  .getActors());
-        }
-        for(RevolverServiceConfig revolverServiceConfig : configuration.getRevolver()
-                .getServices()) {
-            actors.putAll(CollectionUtils.nullSafeMap(revolverServiceConfig.getActors()));
-        }
-        return actors;
+        List<MessageHandlingActor> rmqMessageHandlingActors = Lists.newArrayList();
+        CallbackConfig callbackConfig = configuration.getCallbackConfig();
+        RMQConnection rmqConnection = initializeRmqConnection(configuration, environment, metrics);
+        Map<String, ActorConfig> actors = callbackConfig.getActors();
+        actors.forEach((a, actorConfig) -> rmqMessageHandlingActors.add(
+                new CallbackMessageHandlingActor(a, actorConfig, rmqConnection, objectMapper, callbackHandler, persistenceProvider)));
+
+        RMQActionMessagePublisher.initialize(rmqMessageHandlingActors);
+
+        environment.lifecycle()
+                .manage(new RMQWrapper(rmqConnection));
     }
+
+    private RMQConnection initializeRmqConnection(AppConfig configuration, Environment environment, MetricRegistry metrics) {
+
+        Map<String, ActorConfig> actors = configuration.getCallbackConfig()
+                .getActors();
+
+        AtomicInteger rmqConcurrency = new AtomicInteger();
+        actors.forEach((a, actorConfig) -> {
+            rmqConcurrency.addAndGet(actorConfig.getConcurrency());
+        });
+
+        return new RMQConnection(configuration.getRmqConfig(), metrics,
+                                                        Executors.newFixedThreadPool(rmqConcurrency.get())
+        );
+        /*environment.lifecycle()
+                .manage(rmqConnection);
+
+
+        return rmqConnection;*/
+    }
+
+    public static CallbackConfig.CallbackType getCallbackType(String path) {
+
+        //TODO To figure out a better way
+        final CallbackConfig.CallbackType[] toReturn = new CallbackConfig.CallbackType[1];
+        pathVsCallbackType.forEach((s, callbackType) -> {
+            Pattern pattern = Pattern.compile(s);
+            if(pattern.matcher(path)
+                    .find()) {
+                toReturn[0] = callbackType;
+
+            }
+        });
+        if(toReturn[0] == null) {
+            return CallbackConfig.CallbackType.INLINE;
+        }
+        return toReturn[0];
+
+        /*final val callbackType = pathVsCallbackType.entrySet()
+                .stream()
+                .filter(entry -> path.matches(entry.getKey()))
+                .findFirst();*/
+
+    }
+
+    public static String getQueueId(String path) {
+
+        //TODO To figure out a better way
+        final String[] toReturn = new String[1];
+        pathVsQueueId.forEach((s, queueId) -> {
+            Pattern pattern = Pattern.compile(s);
+            if(pattern.matcher(path)
+                    .find()) {
+                toReturn[0] = queueId;
+
+            }
+        });
+        if(StringUtils.isEmpty(toReturn[0])) {
+            return ActionMessage.DEFAULT_QUEUE_ID;
+        }
+        return toReturn[0];
+
+        /*final val callbackType = pathVsCallbackType.entrySet()
+                .stream()
+                .filter(entry -> path.matches(entry.getKey()))
+                .findFirst();*/
+
+    }
+
+    public static void initializeMeta(CallbackConfig callbackConfig) {
+
+        if(callbackConfig == null || CollectionUtils.isEmpty(callbackConfig.getCallbackPathConfigs())) {
+            return;
+        }
+
+        callbackConfig.getCallbackPathConfigs()
+                .forEach(callbackPathConfig -> {
+                    if(CallbackConfig.CallbackType.RMQ.equals(callbackConfig.getCallbackType())) {
+                        callbackPathConfig.getPathIds()
+                                .forEach(s -> {
+                                    pathVsQueueId.put(s, callbackPathConfig.getQueueId());
+                                });
+                    }
+                    callbackPathConfig.getPathIds()
+                            .forEach(s -> {
+                                callbackPathConfig.getPathIds()
+                                        .forEach(path -> {
+                                            pathVsCallbackType.put(path, callbackConfig.getCallbackType());
+                                        });
+                            });
+                });
+    }
+
 
     private PersistenceProvider getPersistenceProvider(final AppConfig configuration, final Environment environment) {
         final RevolverConfig revolverConfig = configuration.getRevolver();

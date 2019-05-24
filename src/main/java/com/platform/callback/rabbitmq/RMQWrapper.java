@@ -21,7 +21,7 @@ public class RMQWrapper implements Managed {
     @Override
     public void start() throws Exception {
         connection.start();
-        ActionMessagePublisher.getActors()
+        RMQActionMessagePublisher.getActors()
                 .forEach((s, messageHandlingActor) -> {
                     try {
                         messageHandlingActor.start();
@@ -35,7 +35,7 @@ public class RMQWrapper implements Managed {
     @Override
     public void stop() throws Exception {
         connection.stop();
-        ActionMessagePublisher.getActors()
+        RMQActionMessagePublisher.getActors()
                 .forEach((s, messageHandlingActor) -> {
                     try {
                         messageHandlingActor.stop();

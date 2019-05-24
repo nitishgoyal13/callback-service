@@ -4,11 +4,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.platform.callback.rabbitmq.ActionMessageVisitor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /***
  Created by nitish.goyal on 05/02/19
  ***/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class CallbackMessage extends ActionMessage {
 
     public static final String TYPE = "callback";

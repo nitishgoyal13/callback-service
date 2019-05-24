@@ -19,13 +19,12 @@ package com.platform.callback.resources;
 
 import com.codahale.metrics.annotation.Metered;
 import com.google.common.io.ByteStreams;
+import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.services.DownstreamResponseHandler;
 import io.dropwizard.msgpack.MsgPackMediaType;
-import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
-import io.dropwizard.revolver.callback.InlineCallbackHandler;
+import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
-import io.dropwizard.revolver.util.HeaderUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.Builder;
@@ -58,7 +57,7 @@ public class CallbackResource {
 
     private final DownstreamResponseHandler downstreamResponseHandler;
 
-    @Path("/v1/callback/{requestId}")
+    @Path("/v1/handler/{requestId}")
     @POST
     @Metered
     @ApiOperation(value = "Callback for updating responses for a given mailbox request")
@@ -68,25 +67,17 @@ public class CallbackResource {
                                    @HeaderParam(RESPONSE_CODE_HEADER) final String responseCode, @Context final HttpHeaders headers,
                                    @Context final HttpServletRequest request) {
         try {
-            final val callbackRequest = persistenceProvider.request(requestId);
-            if(callbackRequest == null) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                        .build();
-            }
+
             byte[] responseBody = ByteStreams.toByteArray(request.getInputStream());
             val response = RevolverCallbackResponse.builder()
                     .body(responseBody)
                     .headers(headers.getRequestHeaders())
                     .statusCode(responseCode != null ? Integer.parseInt(responseCode) : Response.Status.OK.getStatusCode())
                     .build();
-            val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
 
-            val apiMap = RevolverBundle.matchPath(callbackRequest.getService(), callbackRequest.getPath());
-            log.info("Service : " + callbackRequest.getService() + ", path : " + callbackRequest.getPath());
-            log.info("apiMap : " + apiMap);
-            log.info("Callbackservice : " + callbackRequest.getService() + ", api : " + callbackRequest.getApi() + ", api : " +
-                     apiMap.getApi() + ", mode : " + callbackRequest.getMode());
-            downstreamResponseHandler.saveResponse(requestId, response, callbackRequest.getMode(), mailboxTtl, apiMap.getApi());
+
+            downstreamResponseHandler.saveResponse(requestId, response, headers.getRequestHeaders()
+                    .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
             log.info("Callback added in the queue for processing");
             return Response.accepted()
                     .build();

@@ -21,6 +21,7 @@ import com.codahale.metrics.annotation.Metered;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.services.DownstreamResponseHandler;
 import io.dropwizard.jersey.PATCH;
 import io.dropwizard.msgpack.MsgPackMediaType;
@@ -29,7 +30,6 @@ import io.dropwizard.revolver.base.core.RevolverAckMessage;
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
-import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
@@ -367,7 +367,8 @@ public class CallbackRequestResource {
                 persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
             } else {
                 persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
-                downstreamResponseHandler.saveResponse(requestId, getResponse(result), callMode, mailBoxTtl, api);
+                downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
+                        .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
             }
             return transform(headers, result, api.getApi(), path, method);
         } else {
@@ -377,10 +378,12 @@ public class CallbackRequestResource {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
                     } else if(result.getStatusCode() == Response.Status.OK.getStatusCode()) {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
-                        downstreamResponseHandler.saveResponse(requestId, getResponse(result), callMode, mailBoxTtl, api);
+                        downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
+                                .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
                     } else {
                         persistenceProvider.setRequestState(requestId, RevolverRequestState.ERROR, mailBoxTtl);
-                        downstreamResponseHandler.saveResponse(requestId, getResponse(result), callMode, mailBoxTtl, api);
+                        downstreamResponseHandler.saveResponse(requestId, getResponse(result), headers.getRequestHeaders()
+                                .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
                     }
                 } catch (Exception e) {
                     log.error("Error setting request state for request id: {}", requestId, e);
@@ -414,7 +417,7 @@ public class CallbackRequestResource {
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
                                          final UriInfo uriInfo, final byte[] body) throws Exception {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
-        log.info("Executing CALL_MODE_CALLBACK_SYNC : " + service + ":" + path + ", with callback path : " + headers.getRequestHeaders()
+        log.info("Executing CALL_MODE_CALLBACK_SYNC : " + service + ":" + path + ", with handler path : " + headers.getRequestHeaders()
                 .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
         headers.getRequestHeaders()
                 .forEach(sanatizedHeaders::put);
