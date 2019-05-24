@@ -33,14 +33,17 @@ public class DownstreamResponseHandler {
 
     public void saveResponse(String requestId, RevolverCallbackResponse response, String path) {
         try {
-
+            final val callbackRequest = persistenceProvider.request(requestId);
+            if(StringUtils.isEmpty(path)) {
+                log.info("Path is null, new path : " + callbackRequest.getCallbackUri());
+                path = callbackRequest.getCallbackUri();
+            }
             CallbackConfig.CallbackType callbackType = App.getCallbackType(path);
             log.info("CallbackType : " + callbackType);
 
             switch (callbackType) {
 
                 case RMQ:
-                    final val callbackRequest = persistenceProvider.request(requestId);
                     if(callbackRequest == null) {
                         throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, "Callback request not found");
                     }
