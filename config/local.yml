@@ -56,18 +56,34 @@ callbackConfig:
     - pathIds:
       - "/foxtrot/*"
       queueId: DEFAULT
+    - pathIds:
+      - "/payment/*"
+      - "/nexus/*"
+      - "/mercury/*"
+      queueId: payment-queue
   actors:
-    DEFAULT:
-      exchange: callback_messages
-      delayed: false
-      prefix: callback.actors
-      concurrency: 3
-      prefetchCount: 1
-      retryConfig:
-        type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
-        maxAttempts: 6
-        multipier: 50
-        maxTimeBetweenRetries: 30s
+      DEFAULT:
+        exchange: callback_messages
+        delayed: false
+        prefix: callback.actors
+        concurrency: 3
+        prefetchCount: 1
+        retryConfig:
+          type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+          maxAttempts: 6
+          multipier: 50
+          maxTimeBetweenRetries: 30s
+      payment-queue:
+        exchange: callback_messages
+        delayed: false
+        prefix: callback.actors
+        concurrency: 3
+        prefetchCount: 1
+        retryConfig:
+          type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+          maxAttempts: 6
+          multipier: 50
+          maxTimeBetweenRetries: 30s
 
 revolver:
   hystrixStreamPath: /hystrix.stream

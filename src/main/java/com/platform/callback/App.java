@@ -8,9 +8,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
 import com.phonepe.rosey.dwconfig.RoseyConfigSourceProvider;
-import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.config.AppConfig;
 import com.platform.callback.config.CallbackConfig;
+import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
 import com.platform.callback.rabbitmq.RMQWrapper;
 import com.platform.callback.rabbitmq.actors.impl.CallbackMessageHandlingActor;
@@ -237,9 +237,7 @@ public class App extends Application<AppConfig> {
             rmqConcurrency.addAndGet(actorConfig.getConcurrency());
         });
 
-        return new RMQConnection(configuration.getRmqConfig(), metrics,
-                                                        Executors.newFixedThreadPool(rmqConcurrency.get())
-        );
+        return new RMQConnection(configuration.getRmqConfig(), metrics, Executors.newFixedThreadPool(rmqConcurrency.get()));
         /*environment.lifecycle()
                 .manage(rmqConnection);
 
@@ -253,6 +251,7 @@ public class App extends Application<AppConfig> {
         final CallbackConfig.CallbackType[] toReturn = new CallbackConfig.CallbackType[1];
         pathVsCallbackType.forEach((s, callbackType) -> {
             Pattern pattern = Pattern.compile(s);
+            log.info("Regex : " + s + ", matcher : " + path);
             if(pattern.matcher(path)
                     .find()) {
                 toReturn[0] = callbackType;
