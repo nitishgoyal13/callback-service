@@ -6,10 +6,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Stage;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
 import com.phonepe.rosey.dwconfig.RoseyConfigSourceProvider;
 import com.platform.callback.config.AppConfig;
 import com.platform.callback.config.CallbackConfig;
+import com.platform.callback.executor.CallbackExecutor;
+import com.platform.callback.executor.CallbackExecutorFactory;
+import com.platform.callback.guice.ExecutorInjectorModule;
 import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
 import com.platform.callback.rabbitmq.RMQWrapper;
@@ -19,6 +25,7 @@ import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import com.platform.callback.resources.CallbackRequestResource;
 import com.platform.callback.resources.CallbackResource;
 import com.platform.callback.services.DownstreamResponseHandler;
+import com.platform.callback.utils.ConstantUtils;
 import com.utils.StringUtils;
 import io.dropwizard.Application;
 import io.dropwizard.actors.RabbitmqActorBundle;
@@ -46,7 +53,9 @@ import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
+import ru.vyarus.dropwizard.guice.GuiceBundle;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -62,6 +71,9 @@ public class App extends Application<AppConfig> {
 
     private static Map<String, String> pathVsQueueId = Maps.newHashMap();
     private static Map<String, CallbackConfig.CallbackType> pathVsCallbackType = Maps.newHashMap();
+
+    private List<String> packageNameList = Arrays.asList(ConstantUtils.BASE_PACKAGE);
+
 
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {
@@ -150,6 +162,11 @@ public class App extends Application<AppConfig> {
             }
         });
 
+        /*bootstrap.addBundle(GuiceBundle.<AppConfig>builder().enableAutoConfig(packageNameList.toArray(new String[0]))
+                                    .modules(new ExecutorInjectorModule())
+                                    .build(Stage.PRODUCTION));*/
+
+
     }
 
     @Override
@@ -172,6 +189,10 @@ public class App extends Application<AppConfig> {
 
         CallbackConfig callbackConfig = configuration.getCallbackConfig();
         initializeMeta(callbackConfig);
+
+        /*Injector injector = Guice.createInjector(new ExecutorInjectorModule());
+        CallbackExecutorFactory callbackExecutorFactory = new CallbackExecutorFactory(injector);
+        CallbackExecutor callbackExecutor = callbackExecutorFactory.getExecutor(callbackConfig.getCallbackType());*/
 
         if(CallbackConfig.CallbackType.RMQ.equals(callbackConfig.getCallbackType())) {
             setupRmq(configuration, environment, metrics, objectMapper, callbackHandler, persistenceProvider);

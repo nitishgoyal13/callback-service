@@ -9,5 +9,4 @@ public interface ActionMessageVisitor<T> {
 
     T visit(CallbackMessage callbackMessage);
 
-
 }

@@ -9,4 +9,5 @@ public class ConstantUtils {
     }
 
     public static final String MESSAGE = "message";
+    public static String BASE_PACKAGE = "com.platform.callback.executor";
 }
