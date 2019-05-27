@@ -6,16 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Stage;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
 import com.phonepe.rosey.dwconfig.RoseyConfigSourceProvider;
 import com.platform.callback.config.AppConfig;
 import com.platform.callback.config.CallbackConfig;
-import com.platform.callback.executor.CallbackExecutor;
-import com.platform.callback.executor.CallbackExecutorFactory;
-import com.platform.callback.guice.ExecutorInjectorModule;
 import com.platform.callback.handler.InlineCallbackHandler;
 import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
 import com.platform.callback.rabbitmq.RMQWrapper;
@@ -53,7 +47,6 @@ import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
-import ru.vyarus.dropwizard.guice.GuiceBundle;
 
 import java.util.Arrays;
 import java.util.List;
@@ -93,6 +86,11 @@ public class App extends Application<AppConfig> {
         } else {
             bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
         }
+
+        //TODO Delete later
+        bootstrap.setConfigurationSourceProvider(
+                new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
+
 
         ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
