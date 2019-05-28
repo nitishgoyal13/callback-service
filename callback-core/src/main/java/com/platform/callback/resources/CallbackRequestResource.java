@@ -149,7 +149,7 @@ public class CallbackRequestResource {
         val callMode = headers.getRequestHeaders()
                 .getFirst(RevolversHttpHeaders.CALL_MODE_HEADER);
         if(Strings.isNullOrEmpty(callMode)) {
-            return executeInline(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body);
+            return executeInline(service, apiMap.getApi(), method, path, headers, uriInfo, body);
         }
 
 
@@ -163,7 +163,7 @@ public class CallbackRequestResource {
                                                                         ))
                             .build();
                 }
-                return executeCommandAsync(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body);
+                return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body);
             case RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                     log.error("Empty CALLBACK_URI_HEADER CALL_MODE_CALLBACK_SYNC : " + service + ":" + path);
@@ -173,7 +173,7 @@ public class CallbackRequestResource {
                                                                         ))
                             .build();
                 }
-                return executeCallbackSync(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body);
+                return executeCallbackSync(service, apiMap.getApi(), method, path, headers, uriInfo, body);
             default:
                 break;
         }
