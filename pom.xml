@@ -10,7 +10,6 @@
     <version>1.3.8</version>
     <modules>
         <module>callback-core</module>
-        <module>callback-rmq</module>
     </modules>
 
     <name>Callback-Service</name>
@@ -122,11 +121,6 @@
             <version>4.1.0</version>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-        </dependency>
-        <dependency>
             <groupId>ru.vyarus</groupId>
             <artifactId>dropwizard-guicey</artifactId>
             <version>${dropwizard.guicey.version}</version>
@@ -202,11 +196,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
             <version>${commons.text.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -432,35 +421,10 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.spotify</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.4.10</version>
+                        <artifactId>maven-deploy-plugin</artifactId>
                         <configuration>
-                            <imageName>docker.phonepe.com:5000/phonepe-api-callback:${project.version}</imageName>
-                            <dockerDirectory>${project.basedir}</dockerDirectory>
-                            <serverId>phonepe-docker</serverId>
-                            <registryUrl>http://docker.phonepe.com:5000/</registryUrl>
+                            <skip>true</skip>
                         </configuration>
-                        <executions>
-                            <execution>
-                                <id>build-image</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>push-image</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>push</goal>
-                                </goals>
-                                <configuration>
-                                    <imageName>docker.phonepe.com:5000/phonepe-api-callback:${project.version}
-                                    </imageName>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>
