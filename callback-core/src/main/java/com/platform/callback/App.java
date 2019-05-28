@@ -77,7 +77,7 @@ public class App extends Application<AppConfig> {
             }
         });
         String localConfigStr = System.getenv("localConfig");
-        RoseyConfigSourceProvider roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
+        /*RoseyConfigSourceProvider roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
 
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
         if(localConfig) {
@@ -85,7 +85,7 @@ public class App extends Application<AppConfig> {
                     new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
         } else {
             bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
-        }
+        }*/
 
         //TODO Delete later
         bootstrap.setConfigurationSourceProvider(
