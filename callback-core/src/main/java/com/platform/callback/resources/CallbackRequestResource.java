@@ -350,7 +350,7 @@ public class CallbackRequestResource {
     private Response executeCallbackSync(final String service, final RevolverHttpApiConfig api,
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
                                          final UriInfo uriInfo, final byte[] body) throws Exception {
-        log.error("Executing in the sync mode  : " + path);
+        log.error("Executing in the sync mode, Resolved path : " + path + ", api path : " + api.getPath());
         val requestId = getRequestId(headers);
         val mailBoxTtl = getMailBoxTtl(headers);
         if(persistenceProvider.exists(requestId))
@@ -358,7 +358,9 @@ public class CallbackRequestResource {
 
         saveRequest(service, api, path, headers, uriInfo, body, requestId);
         log.error("Request saved");
-        CompletableFuture<RevolverHttpResponse> response = executeAndGetResponse(service, api, method, path, uriInfo, body, headers);
+        CompletableFuture<RevolverHttpResponse> response = executeAndGetResponse(service, api, method, api.getPath(), uriInfo, body,
+                                                                                 headers
+                                                                                );
         val result = response.get();
         log.error("Result received : " + result.toString());
         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
@@ -381,10 +383,9 @@ public class CallbackRequestResource {
                 .forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
         val requestId = getRequestId(headers);
-
         val transactionId = headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
-
         val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
+
         return httpCommand.executeAsync(RevolverHttpRequest.builder()
                                                 .traceInfo(TraceInfo.builder()
                                                                    .requestId(requestId)
