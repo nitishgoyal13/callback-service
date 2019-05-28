@@ -421,7 +421,9 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>com.spotify</groupId>
                         <artifactId>maven-deploy-plugin</artifactId>
+                        <version>0.4.10</version>
                         <configuration>
                             <skip>true</skip>
                         </configuration>
