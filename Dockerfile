@@ -11,7 +11,7 @@ VOLUME /var/log/api-callback
 #ADD maxmind/GeoIP2-City.mmdb GeoIP2-City.mmdb
 
 ENV CONFIG_PATH callback.yml
-ENV JAR_FILE api-callback.jar
+ENV JAR_FILE callback.jar
 
 ADD callback-core/target/callback*.jar ${JAR_FILE}
 
