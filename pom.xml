@@ -394,9 +394,6 @@
 
     <profiles>
         <profile>
-            <id>ant</id>
-        </profile>
-        <profile>
             <id>lombok-needs-tools-jar</id>
             <activation>
                 <file>
@@ -446,4 +443,5 @@
             </plugin>
         </plugins>
     </reporting>
+
 </project>
