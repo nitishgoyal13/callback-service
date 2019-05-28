@@ -138,6 +138,7 @@ public class CallbackRequestResource {
         }
         String serviceKey = service + "." + apiMap.getApi()
                 .getApi();
+        log.error("ServiceKey : " + serviceKey);
         if(RevolverBundle.apiStatus.containsKey(serviceKey) && !RevolverBundle.apiStatus.get(serviceKey)) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE)
                     .entity(ResponseTransformationUtil.transform(SERVICE_UNAVAILABLE_RESPONSE, getMediaType(headers), jsonObjectMapper,
@@ -349,14 +350,17 @@ public class CallbackRequestResource {
     private Response executeCallbackSync(final String service, final RevolverHttpApiConfig api,
                                          final RevolverHttpApiConfig.RequestMethod method, final String path, final HttpHeaders headers,
                                          final UriInfo uriInfo, final byte[] body) throws Exception {
+        log.error("Executing in the sync mode  : " + path);
         val requestId = getRequestId(headers);
         val mailBoxTtl = getMailBoxTtl(headers);
         if(persistenceProvider.exists(requestId))
             return getDuplicateRequestResponse(headers);
 
         saveRequest(service, api, path, headers, uriInfo, body, requestId);
+        log.error("Request saved");
         CompletableFuture<RevolverHttpResponse> response = executeAndGetResponse(service, api, method, path, uriInfo, body, headers);
         val result = response.get();
+        log.error("Result received : " + result.toString());
         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
         return transform(headers, result, api.getApi(), path, method);
     }
