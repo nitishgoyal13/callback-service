@@ -98,29 +98,6 @@ revolver:
   callbackTimeout: 3000
   services:
     - type: http
-      service: foxtrotService
-      connectionPoolSize: 5
-      connectionKeepAliveInMillis: 60000
-      authEnabled: false
-      endpoint:
-        type: simple
-        host: localhost
-        port: 17000
-      apis:
-        - api: foxtrot_tables
-          path: "foxtrot/v1/tables"
-          methods:
-            - GET
-          authorization:
-            type: static
-            methods:
-              - GET
-          whitelist: true
-          runtime:
-            threadPool:
-              concurrency: 2
-              timeout: 30000
-    - type: http
       service: foxtrot
       connectionPoolSize: 5
       connectionKeepAliveInMillis: 60000
@@ -132,6 +109,19 @@ revolver:
       apis:
         - api: tables
           path: "foxtrot/v1/tables"
+          methods:
+            - GET
+          authorization:
+            type: static
+            methods:
+              - GET
+          whitelist: true
+          runtime:
+            threadPool:
+              concurrency: 4
+              timeout: 60000
+        - api: table
+          path: "foxtrot/v1/tables/{table}"
           methods:
             - GET
           authorization:
