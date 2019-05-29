@@ -437,7 +437,7 @@ public class App extends Application<AppConfig> {
             if(pattern.matcher(path)
                     .find()) {
                 toReturn[0] = queueId;
-                log.error("Queue Id : " + queueId);
+                log.info("Queue Id : " + queueId);
             }
         });
         if(StringUtils.isEmpty(toReturn[0])) {
