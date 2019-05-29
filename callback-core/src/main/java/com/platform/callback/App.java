@@ -3,7 +3,6 @@ package com.platform.callback;
 import com.codahale.metrics.MetricRegistry;
 import com.collections.CollectionUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
@@ -77,8 +76,8 @@ public class App extends Application<AppConfig> {
             }
         });
         String localConfigStr = System.getenv("localConfig");
-        /*RoseyConfigSourceProvider roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
-
+        RoseyConfigSourceProvider roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
+        /*
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
         if(localConfig) {
             bootstrap.setConfigurationSourceProvider(
@@ -133,7 +132,7 @@ public class App extends Application<AppConfig> {
             public ConfigSource getConfigSource() {
                 return () -> {
                     try {
-                        return null;
+                        return roseyConfigSourceProvider.fetchRemoteConfig();
                     } catch (Exception e) {
                         log.error("Exception in getting source ", e);
 
