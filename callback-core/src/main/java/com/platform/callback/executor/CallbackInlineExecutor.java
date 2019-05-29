@@ -2,13 +2,12 @@ package com.platform.callback.executor;
 
 import com.google.inject.Inject;
 import com.platform.callback.annotations.Executor;
-import com.platform.callback.config.AppConfig;
-import com.platform.callback.config.CallbackConfig;
-import com.platform.callback.handler.CallbackHandler;
+import com.platform.callback.common.config.CallbackConfig;
+import com.platform.callback.common.handler.CallbackHandler;
+import com.platform.callback.core.config.AppConfig;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.setup.Environment;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

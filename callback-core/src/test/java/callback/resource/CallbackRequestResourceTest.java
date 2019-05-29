@@ -20,7 +20,7 @@ package callback.resource;
 import callback.BaseCallbackTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import com.platform.callback.resources.CallbackRequestResource;
+import com.platform.callback.core.resources.CallbackRequestResource;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;

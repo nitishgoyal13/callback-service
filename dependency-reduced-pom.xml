@@ -63,7 +63,7 @@
                 <transformer />
                 <transformer>
                   <manifestEntries>
-                    <Main-Class>com.platform.callback.Server</Main-Class>
+                    <Main-Class>Server</Main-Class>
                     <Build-Number>${build.number}</Build-Number>
                     <Git-Commit>${build.revision}</Git-Commit>
                   </manifestEntries>

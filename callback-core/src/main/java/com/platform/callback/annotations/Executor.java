@@ -1,6 +1,6 @@
 package com.platform.callback.annotations;
 
-import com.platform.callback.config.CallbackConfig;
+import com.platform.callback.common.config.CallbackConfig;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -5,9 +5,8 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.platform.callback.annotations.Executor;
-import com.platform.callback.config.CallbackConfig;
-import com.platform.callback.utils.ConstantUtils;
-import lombok.Builder;
+import com.platform.callback.common.config.CallbackConfig;
+import com.platform.callback.common.utils.ConstantUtils;
 import lombok.Data;
 import org.reflections.Reflections;
 
