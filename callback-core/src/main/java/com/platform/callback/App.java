@@ -30,12 +30,18 @@ import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryBundle;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryConfiguration;
 import io.dropwizard.oor.OorBundle;
+import io.dropwizard.primer.PrimerBundle;
+import io.dropwizard.primer.model.PrimerAuthorization;
+import io.dropwizard.primer.model.PrimerAuthorizationMatrix;
+import io.dropwizard.primer.model.PrimerBundleConfiguration;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.aeroapike.AerospikeConnectionManager;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.filters.RevolverRequestFilter;
 import io.dropwizard.revolver.handler.ConfigSource;
+import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
+import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -47,12 +53,11 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by nitishgoyal13 on 31/1/19.
@@ -141,6 +146,157 @@ public class App extends Application<AppConfig> {
                 };
 
             }
+        });
+
+        bootstrap.addBundle(new PrimerBundle<AppConfig>() {
+
+            @Override
+            public CuratorFramework getCurator(AppConfig configuration) {
+                return serviceDiscoveryBundle.getCurator();
+            }
+
+            @Override
+            public PrimerBundleConfiguration getPrimerConfiguration(AppConfig apiConfiguration) {
+                return apiConfiguration.getPrimer();
+            }
+
+            @Override
+            public Set<String> withWhiteList(AppConfig apiConfiguration) {
+                return apiConfiguration.getRevolver()
+                        .getServices()
+                        .stream()
+                        .filter(service -> service instanceof RevolverHttpServiceConfig)
+                        .map(service -> ((RevolverHttpServiceConfig)service).getApis()
+                                .stream()
+                                .filter(RevolverHttpApiConfig::isWhitelist)
+                                .map(a -> "apis/" + service.getService() + "/" + a.getPath())
+                                .collect(Collectors.toSet()))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toSet());
+            }
+
+            @Override
+            public PrimerAuthorizationMatrix withAuthorization(AppConfig apiConfiguration) {
+                val staticAuth = apiConfiguration.getRevolver()
+                        .getServices()
+                        .stream()
+                        .filter(service -> service instanceof RevolverHttpServiceConfig)
+                        .map(service -> ((RevolverHttpServiceConfig)service).getApis()
+                                .stream()
+                                .filter(a -> !a.isWhitelist())
+                                .filter(this::checkStaticAuthorization)
+                                .map(a -> primerStaticAuthorization(a, (RevolverHttpServiceConfig)service))
+                                .collect(Collectors.toSet()))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+                val dynamicAuth = apiConfiguration.getRevolver()
+                        .getServices()
+                        .stream()
+                        .filter(service -> service instanceof RevolverHttpServiceConfig)
+                        .map(service -> ((RevolverHttpServiceConfig)service).getApis()
+                                .stream()
+                                .filter(a -> !a.isWhitelist())
+                                .filter(this::checkDynamicAuthorization)
+                                .map(a -> primerDynamicAuthorization(a, ((RevolverHttpServiceConfig)service)))
+                                .collect(Collectors.toSet()))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+                val autoAuth = apiConfiguration.getRevolver()
+                        .getServices()
+                        .stream()
+                        .filter(service -> service instanceof RevolverHttpServiceConfig)
+                        .map(service -> ((RevolverHttpServiceConfig)service).getApis()
+                                .stream()
+                                .filter(a -> !a.isWhitelist())
+                                .filter(this::checkAutoAuthorization)
+                                .map(a -> primerAutoAuthorization(a, ((RevolverHttpServiceConfig)service)))
+                                .collect(Collectors.toSet()))
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+                if(apiConfiguration.getPrimer() != null && apiConfiguration.getPrimer()
+                                                                   .getAuthorizations() != null) {
+                    if(apiConfiguration.getPrimer()
+                               .getAuthorizations()
+                               .getAutoAuthorizations() != null) {
+                        autoAuth.addAll(apiConfiguration.getPrimer()
+                                                .getAuthorizations()
+                                                .getAutoAuthorizations());
+                    }
+                    if(apiConfiguration.getPrimer()
+                               .getAuthorizations()
+                               .getStaticAuthorizations() != null) {
+                        autoAuth.addAll(apiConfiguration.getPrimer()
+                                                .getAuthorizations()
+                                                .getStaticAuthorizations());
+                    }
+                    if(apiConfiguration.getPrimer()
+                               .getAuthorizations()
+                               .getAuthorizations() != null) {
+                        dynamicAuth.addAll(apiConfiguration.getPrimer()
+                                                   .getAuthorizations()
+                                                   .getAuthorizations());
+                    }
+                }
+                return PrimerAuthorizationMatrix.builder()
+                        .staticAuthorizations(staticAuth)
+                        .authorizations(dynamicAuth)
+                        .autoAuthorizations(autoAuth)
+                        .build();
+            }
+
+            private PrimerAuthorization primerDynamicAuthorization(RevolverHttpApiConfig apiConfig,
+                                                                   RevolverHttpServiceConfig serviceConfig) {
+                return PrimerAuthorization.builder()
+                        .type("dynamic")
+                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .methods(apiConfig.getAuthorization()
+                                         .getMethods())
+                        .roles(apiConfig.getAuthorization()
+                                       .getRoles())
+                        .build();
+            }
+
+            private boolean checkDynamicAuthorization(RevolverHttpApiConfig apiConfig) {
+                return (!apiConfig.isWhitelist() && apiConfig.getAuthorization() != null && apiConfig.getAuthorization()
+                        .getType()
+                        .equals("dynamic"));
+            }
+
+            private PrimerAuthorization primerStaticAuthorization(RevolverHttpApiConfig apiConfig,
+                                                                  RevolverHttpServiceConfig serviceConfig) {
+                return PrimerAuthorization.builder()
+                        .type("static")
+                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .methods(apiConfig.getAuthorization()
+                                         .getMethods())
+                        .roles(apiConfig.getAuthorization()
+                                       .getRoles())
+                        .build();
+            }
+
+            private boolean checkStaticAuthorization(RevolverHttpApiConfig apiConfig) {
+                return (!apiConfig.isWhitelist() && apiConfig.getAuthorization() != null && apiConfig.getAuthorization()
+                        .getType()
+                        .equals("static"));
+            }
+
+            private PrimerAuthorization primerAutoAuthorization(RevolverHttpApiConfig apiConfig, RevolverHttpServiceConfig serviceConfig) {
+                return PrimerAuthorization.builder()
+                        .type("auto")
+                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .methods(apiConfig.getAuthorization()
+                                         .getMethods())
+                        .roles(apiConfig.getAuthorization()
+                                       .getRoles())
+                        .build();
+            }
+
+            private boolean checkAutoAuthorization(RevolverHttpApiConfig apiConfig) {
+                return (!apiConfig.isWhitelist() && apiConfig.getAuthorization() != null && apiConfig.getAuthorization()
+                        .getType()
+                        .equals("auto"));
+            }
+
         });
 
         RabbitmqActorBundle<AppConfig> rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {

@@ -5,6 +5,7 @@ import com.hystrix.configurator.config.HystrixConfig;
 import io.dropwizard.Configuration;
 import io.dropwizard.actors.config.RMQConfig;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryConfiguration;
+import io.dropwizard.primer.model.PrimerBundleConfiguration;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.riemann.RiemannConfig;
 import lombok.*;
@@ -25,6 +26,9 @@ public class AppConfig extends Configuration {
     @JsonProperty("revolver")
     private RevolverConfig revolver = new RevolverConfig();
 
+    private PrimerBundleConfiguration primer = new PrimerBundleConfiguration();
+
+    @NotNull
     @Valid
     private RMQConfig rmqConfig;
 
