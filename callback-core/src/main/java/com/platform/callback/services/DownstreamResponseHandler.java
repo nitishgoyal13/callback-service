@@ -34,20 +34,24 @@ public class DownstreamResponseHandler {
     public void saveResponse(String requestId, RevolverCallbackResponse response, String path) {
         try {
             final val callbackRequest = persistenceProvider.request(requestId);
-            log.info("Path : " + path);
+            if(callbackRequest == null) {
+                log.error("Callback Request Not Found");
+                throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, "Callback request not found");
+            }
+
             if(StringUtils.isEmpty(path)) {
                 log.info("Path is null, new path : " + callbackRequest.getCallbackUri());
                 path = callbackRequest.getCallbackUri();
             }
+
+            log.info("Path : " + path);
             CallbackConfig.CallbackType callbackType = App.getCallbackType(path);
             log.info("CallbackType : " + callbackType);
 
             switch (callbackType) {
 
                 case RMQ:
-                    if(callbackRequest == null) {
-                        throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, "Callback request not found");
-                    }
+
                     val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
                     final String callMode = callbackRequest.getMode();
                     persistenceProvider.saveResponse(requestId, response, mailboxTtl);

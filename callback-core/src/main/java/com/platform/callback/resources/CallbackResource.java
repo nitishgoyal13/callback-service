@@ -59,7 +59,6 @@ public class CallbackResource {
                     .statusCode(responseCode != null ? Integer.parseInt(responseCode) : Response.Status.OK.getStatusCode())
                     .build();
 
-
             downstreamResponseHandler.saveResponse(requestId, response, headers.getRequestHeaders()
                     .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
             log.info("Callback added in the queue for processing");
