@@ -17,10 +17,13 @@
 
     <distributionManagement>
         <repository>
-            <id>clojars</id>
-            <name>Clojars repository</name>
-            <url>https://clojars.org/repo</url>
+            <id>phonepe-releases</id>
+            <url>http://artifactory.phonepe.com/content/repositories/releases</url>
         </repository>
+        <snapshotRepository>
+            <id>phonepe-snapshots</id>
+            <url>http://artifactory.phonepe.com/content/repositories/snapshots</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <scm>
