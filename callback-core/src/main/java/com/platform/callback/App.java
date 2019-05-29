@@ -3,6 +3,7 @@ package com.platform.callback;
 import com.codahale.metrics.MetricRegistry;
 import com.collections.CollectionUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
@@ -18,7 +19,6 @@ import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
 import com.platform.callback.resources.CallbackRequestResource;
 import com.platform.callback.resources.CallbackResource;
 import com.platform.callback.services.DownstreamResponseHandler;
-import com.platform.callback.utils.ConstantUtils;
 import com.utils.StringUtils;
 import io.dropwizard.Application;
 import io.dropwizard.actors.RabbitmqActorBundle;
@@ -53,7 +53,10 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -69,9 +72,6 @@ public class App extends Application<AppConfig> {
     private static Map<String, String> pathVsQueueId = Maps.newHashMap();
     private static Map<String, CallbackConfig.CallbackType> pathVsCallbackType = Maps.newHashMap();
 
-    private List<String> packageNameList = Arrays.asList(ConstantUtils.BASE_PACKAGE);
-
-
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {
         bootstrap.addBundle(new OorBundle<AppConfig>() {
@@ -82,19 +82,14 @@ public class App extends Application<AppConfig> {
         });
         String localConfigStr = System.getenv("localConfig");
         RoseyConfigSourceProvider roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
-        /*
+
         boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
         if(localConfig) {
             bootstrap.setConfigurationSourceProvider(
                     new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
         } else {
             bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
-        }*/
-
-        //TODO Delete later
-        bootstrap.setConfigurationSourceProvider(
-                new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
-
+        }
 
         ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
@@ -342,10 +337,6 @@ public class App extends Application<AppConfig> {
 
         CallbackConfig callbackConfig = configuration.getCallbackConfig();
         initializeMeta(callbackConfig);
-
-        /*Injector injector = Guice.createInjector(new ExecutorInjectorModule());
-        CallbackExecutorFactory callbackExecutorFactory = new CallbackExecutorFactory(injector);
-        CallbackExecutor callbackExecutor = callbackExecutorFactory.getExecutor(callbackConfig.getCallbackType());*/
 
         if(CallbackConfig.CallbackType.RMQ.equals(callbackConfig.getCallbackType())) {
             setupRmq(configuration, environment, metrics, objectMapper, callbackHandler, persistenceProvider);
