@@ -1,9 +1,9 @@
 package com.platform.callback.core.services;
 
-import com.platform.callback.core.App;
+import com.platform.callback.common.config.CallbackConfig;
 import com.platform.callback.common.exception.CallbackException;
 import com.platform.callback.common.handler.CallbackHandler;
-import com.platform.callback.common.config.CallbackConfig;
+import com.platform.callback.core.App;
 import com.platform.callback.rmq.RMQActionMessagePublisher;
 import com.platform.callback.rmq.actors.messages.CallbackMessage;
 import com.utils.StringUtils;
@@ -44,7 +44,14 @@ public class DownstreamResponseHandler {
                 path = callbackRequest.getCallbackUri();
             }
 
+            if(StringUtils.isEmpty(path)) {
+                log.warn("Invalid callback uri: {}", requestId);
+                return;
+            }
             log.info("Path : " + path);
+            val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
+            persistenceProvider.saveResponse(requestId, response, mailboxTtl);
+
             CallbackConfig.CallbackType callbackType = App.getCallbackType(path);
             log.info("CallbackType : " + callbackType);
 
@@ -52,10 +59,7 @@ public class DownstreamResponseHandler {
 
                 case RMQ:
 
-                    val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
                     final String callMode = callbackRequest.getMode();
-                    persistenceProvider.saveResponse(requestId, response, mailboxTtl);
-
                     if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
                             RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
                         String queueId = App.getQueueId(path);

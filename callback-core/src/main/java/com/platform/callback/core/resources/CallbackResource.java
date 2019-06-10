@@ -61,7 +61,7 @@ public class CallbackResource {
 
             downstreamResponseHandler.saveResponse(requestId, response, headers.getRequestHeaders()
                     .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
-            log.info("Callback added in the queue for processing");
+            log.info("Callback added for processing");
             return Response.accepted()
                     .build();
         } catch (Exception e) {
