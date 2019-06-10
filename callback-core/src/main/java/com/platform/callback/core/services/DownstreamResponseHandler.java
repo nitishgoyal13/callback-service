@@ -54,14 +54,14 @@ public class DownstreamResponseHandler {
 
             CallbackConfig.CallbackType callbackType = App.getCallbackType(path);
             log.info("CallbackType : " + callbackType);
+            final String callMode = callbackRequest.getMode();
 
-            switch (callbackType) {
+            if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
+                    RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
 
-                case RMQ:
+                switch (callbackType) {
 
-                    final String callMode = callbackRequest.getMode();
-                    if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
-                            RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
+                    case RMQ:
                         String queueId = App.getQueueId(path);
                         if(StringUtils.isEmpty(queueId)) {
                             throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, "Queue not found for the path");
@@ -71,16 +71,17 @@ public class DownstreamResponseHandler {
                                                                   .requestId(requestId)
                                                                   .queueId(queueId)
                                                                   .build());
-                    }
-                    break;
 
-                case INLINE:
-                    log.info("Executing callback InLine");
-                    callbackHandler.handle(requestId, response);
-                    break;
+                        break;
 
-                default:
-                    break;
+                    case INLINE:
+                        log.info("Executing callback InLine");
+                        callbackHandler.handle(requestId, response);
+                        break;
+
+                    default:
+                        break;
+                }
             }
         } catch (Exception e) {
             log.error("Error saving response : ", e);
