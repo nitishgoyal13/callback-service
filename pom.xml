@@ -264,11 +264,6 @@
             <version>0.0.6</version>
         </dependency>
         <dependency>
-            <groupId>com.rabbitmq</groupId>
-            <artifactId>amqp-client</artifactId>
-            <version>5.5.3</version>
-        </dependency>
-        <dependency>
             <groupId>io.dropwizard.discovery</groupId>
             <artifactId>dropwizard-service-discovery-bundle</artifactId>
             <version>1.0.6-SNAPSHOT</version>

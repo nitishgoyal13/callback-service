@@ -20,7 +20,7 @@ public class CallbackConfig {
 
     private List<CallbackPathConfig> callbackPathConfigs;
 
-    Map<String, ActorConfig> actors;
+    private Map<String, ActorConfig> actors;
 
     private CallbackType callbackType;
 

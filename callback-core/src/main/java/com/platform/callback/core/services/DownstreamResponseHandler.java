@@ -47,6 +47,7 @@ public class DownstreamResponseHandler {
             persistenceProvider.saveResponse(requestId, response, mailboxTtl);
 
             final String callMode = callbackRequest.getMode();
+            log.info("CallMode : " + callMode);
 
             if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
                     RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
