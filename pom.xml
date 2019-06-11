@@ -231,7 +231,7 @@
         <dependency>
             <groupId>io.dropwizard.revolver</groupId>
             <artifactId>dropwizard-revolver</artifactId>
-            <version>${dropwizard.version}-37-1-SNAPSHOT</version>
+            <version>${dropwizard.version}-35-CALLBACK-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.actors</groupId>
