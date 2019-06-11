@@ -1,11 +1,8 @@
 package com.platform.callback.core.services;
 
-import com.platform.callback.common.config.CallbackConfig;
 import com.platform.callback.common.exception.CallbackException;
+import com.platform.callback.common.executor.CallbackExecutor;
 import com.platform.callback.common.handler.CallbackHandler;
-import com.platform.callback.core.App;
-import com.platform.callback.rmq.RMQActionMessagePublisher;
-import com.platform.callback.rmq.actors.messages.CallbackMessage;
 import com.utils.StringUtils;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
@@ -30,6 +27,7 @@ public class DownstreamResponseHandler {
 
     private PersistenceProvider persistenceProvider;
     private CallbackHandler callbackHandler;
+    private CallbackExecutor callbackExecutor;
 
     public void saveResponse(String requestId, RevolverCallbackResponse response, String path) {
         try {
@@ -44,44 +42,16 @@ public class DownstreamResponseHandler {
                 path = callbackRequest.getCallbackUri();
             }
 
-            if(StringUtils.isEmpty(path)) {
-                log.warn("Invalid callback uri: {}", requestId);
-                return;
-            }
             log.info("Path : " + path);
             val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
             persistenceProvider.saveResponse(requestId, response, mailboxTtl);
 
-            CallbackConfig.CallbackType callbackType = App.getCallbackType(path);
-            log.info("CallbackType : " + callbackType);
             final String callMode = callbackRequest.getMode();
 
             if(callMode != null && (callMode.equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callMode.equals(
                     RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC))) {
 
-                switch (callbackType) {
-
-                    case RMQ:
-                        String queueId = App.getQueueId(path);
-                        if(StringUtils.isEmpty(queueId)) {
-                            throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, "Queue not found for the path");
-                        }
-                        log.info("Inputting message to Queue with queueId : " + queueId);
-                        RMQActionMessagePublisher.publish(CallbackMessage.builder()
-                                                                  .requestId(requestId)
-                                                                  .queueId(queueId)
-                                                                  .build());
-
-                        break;
-
-                    case INLINE:
-                        log.info("Executing callback InLine");
-                        callbackHandler.handle(requestId, response);
-                        break;
-
-                    default:
-                        break;
-                }
+                callbackExecutor.execute(requestId, response, path);
             }
         } catch (Exception e) {
             log.error("Error saving response : ", e);

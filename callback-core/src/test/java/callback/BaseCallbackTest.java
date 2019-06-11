@@ -152,7 +152,6 @@ public abstract class BaseCallbackTest {
 
 
         CallbackConfig callbackConfig = getCallbackConfig(actorConfigMap);
-        App.initializeMeta(callbackConfig);
 
         MessageHandlingActor messageHandlingActor = Mockito.spy(
                 new RmqCallbackMessageHandlingActor(ActionMessage.DEFAULT_QUEUE_ID, actorConfig, rmqConnection,

@@ -1,8 +1,7 @@
-package com.platform.callback.core.config;
+package com.platform.callback.common.config;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hystrix.configurator.config.HystrixConfig;
-import com.platform.callback.common.config.CallbackConfig;
 import io.dropwizard.Configuration;
 import io.dropwizard.actors.config.RMQConfig;
 import io.dropwizard.discovery.bundle.ServiceDiscoveryConfiguration;

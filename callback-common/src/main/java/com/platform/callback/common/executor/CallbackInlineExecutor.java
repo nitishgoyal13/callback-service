@@ -2,9 +2,11 @@ package com.platform.callback.common.executor;
 
 import com.google.inject.Inject;
 import com.platform.callback.common.annotations.Executor;
+import com.platform.callback.common.config.AppConfig;
 import com.platform.callback.common.config.CallbackConfig;
 import com.platform.callback.common.handler.CallbackHandler;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
+import io.dropwizard.setup.Environment;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,11 @@ public class CallbackInlineExecutor implements CallbackExecutor {
     @Inject
     public CallbackInlineExecutor(CallbackHandler callbackHandler) {
         this.callbackHandler = callbackHandler;
+    }
+
+    @Override
+    public void initialize(AppConfig configuration, Environment environment) {
+
     }
 
     @Override

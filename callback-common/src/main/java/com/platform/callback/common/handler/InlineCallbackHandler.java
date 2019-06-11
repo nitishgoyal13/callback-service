@@ -20,6 +20,7 @@ package com.platform.callback.common.handler;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Strings;
+import com.google.inject.Inject;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
@@ -62,6 +63,7 @@ public class InlineCallbackHandler extends CallbackHandler {
     private static final String RANGER = "ranger";
 
     @Builder
+    @Inject
     public InlineCallbackHandler(PersistenceProvider persistenceProvider, RevolverConfig revolverConfig) {
         super(persistenceProvider, revolverConfig);
         this.clientLoadingCache = Caffeine.newBuilder()

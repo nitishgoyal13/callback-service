@@ -3,7 +3,8 @@ package com.platform.callback.rmq.actors.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.platform.callback.common.handler.CallbackHandler;
-import com.platform.callback.common.handler.InlineCallbackHandler;
+import com.platform.callback.rmq.actors.messages.ActionMessage;
+import com.platform.callback.rmq.actors.messages.CallbackMessage;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
@@ -11,8 +12,6 @@ import io.dropwizard.revolver.persistence.PersistenceProvider;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import com.platform.callback.rmq.actors.messages.ActionMessage;
-import com.platform.callback.rmq.actors.messages.CallbackMessage;
 
 /***
  Created by nitish.goyal on 14/02/19
@@ -27,7 +26,7 @@ public class RmqCallbackMessageHandlingActor extends MessageHandlingActor {
 
     @Inject
     public RmqCallbackMessageHandlingActor(String queueId, ActorConfig config, RMQConnection connection, ObjectMapper mapper,
-                                           InlineCallbackHandler callbackHandler, PersistenceProvider persistenceProvider) {
+                                           CallbackHandler callbackHandler, PersistenceProvider persistenceProvider) {
         super(queueId, config, connection, mapper);
         this.callbackHandler = callbackHandler;
         this.persistenceProvider = persistenceProvider;

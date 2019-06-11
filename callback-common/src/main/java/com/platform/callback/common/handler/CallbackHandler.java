@@ -25,9 +25,9 @@ public abstract class CallbackHandler {
 
     protected PersistenceProvider persistenceProvider;
 
-    protected RevolverConfig revolverConfig;
+    RevolverConfig revolverConfig;
 
-    public CallbackHandler(final PersistenceProvider persistenceProvider, final RevolverConfig revolverConfig) {
+    CallbackHandler(final PersistenceProvider persistenceProvider, final RevolverConfig revolverConfig) {
         this.persistenceProvider = persistenceProvider;
         this.revolverConfig = revolverConfig;
     }
