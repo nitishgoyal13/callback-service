@@ -57,6 +57,27 @@ public class RmqCallbackExecutor implements CallbackExecutor {
         this.callbackHandler = callbackHandler;
     }
 
+    private static void initializeMeta(CallbackConfig callbackConfig) {
+
+        if(callbackConfig == null || CollectionUtils.isEmpty(callbackConfig.getCallbackPathConfigs())) {
+            return;
+        }
+
+        callbackConfig.getCallbackPathConfigs()
+                .forEach(callbackPathConfig -> {
+                    if(CallbackConfig.CallbackType.RMQ.equals(callbackConfig.getCallbackType())) {
+                        callbackPathConfig.getPathIds()
+                                .forEach(s -> pathVsQueueId.put(s, callbackPathConfig.getQueueId()));
+
+                    }
+                    callbackPathConfig.getPathIds()
+                            .forEach(s -> callbackPathConfig.getPathIds()
+                                    .forEach(path -> pathVsCallbackType.put(path, callbackConfig.getCallbackType())));
+
+
+                });
+    }
+
     @Override
     public void initialize(AppConfig configuration, Environment environment) {
         List<MessageHandlingActor> rmqMessageHandlingActors = Lists.newArrayList();
@@ -95,27 +116,6 @@ public class RmqCallbackExecutor implements CallbackExecutor {
     @Override
     public CallbackConfig.CallbackType getType() {
         return CallbackConfig.CallbackType.RMQ;
-    }
-
-    private static void initializeMeta(CallbackConfig callbackConfig) {
-
-        if(callbackConfig == null || CollectionUtils.isEmpty(callbackConfig.getCallbackPathConfigs())) {
-            return;
-        }
-
-        callbackConfig.getCallbackPathConfigs()
-                .forEach(callbackPathConfig -> {
-                    if(CallbackConfig.CallbackType.RMQ.equals(callbackConfig.getCallbackType())) {
-                        callbackPathConfig.getPathIds()
-                                .forEach(s -> pathVsQueueId.put(s, callbackPathConfig.getQueueId()));
-
-                    }
-                    callbackPathConfig.getPathIds()
-                            .forEach(s -> callbackPathConfig.getPathIds()
-                                    .forEach(path -> pathVsCallbackType.put(path, callbackConfig.getCallbackType())));
-
-
-                });
     }
 
     private String getQueueId(String path) {

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import com.platform.callback.rmq.actors.messages.ActionMessage;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.actor.UnmanagedBaseActor;
 import io.dropwizard.actors.connectivity.RMQConnection;
@@ -11,7 +12,6 @@ import io.dropwizard.actors.retry.RetryStrategyFactory;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
-import com.platform.callback.rmq.actors.messages.ActionMessage;
 
 import java.util.Set;
 

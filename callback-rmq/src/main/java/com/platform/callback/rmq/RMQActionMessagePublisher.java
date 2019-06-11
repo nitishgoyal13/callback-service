@@ -2,10 +2,10 @@ package com.platform.callback.rmq;
 
 import com.google.common.collect.Maps;
 import com.platform.callback.common.exception.CallbackException;
-import lombok.Builder;
-import lombok.extern.slf4j.Slf4j;
 import com.platform.callback.rmq.actors.impl.MessageHandlingActor;
 import com.platform.callback.rmq.actors.messages.ActionMessage;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -20,10 +20,10 @@ import java.util.Map;
 public class RMQActionMessagePublisher {
 
 
+    private static Map<String, MessageHandlingActor> actors;
+
     private RMQActionMessagePublisher() {
     }
-
-    private static Map<String, MessageHandlingActor> actors;
 
     public static void initialize(List<MessageHandlingActor> actorList) {
         actors = Maps.newConcurrentMap();

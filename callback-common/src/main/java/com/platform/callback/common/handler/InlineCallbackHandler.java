@@ -57,10 +57,10 @@ import java.util.Collections;
 @Slf4j
 public class InlineCallbackHandler extends CallbackHandler {
 
-    private LoadingCache<CallbackConfigKey, RevolverHttpServiceConfig> clientLoadingCache;
     private static final String HTTPS = "https";
     private static final String HTTP = "http";
     private static final String RANGER = "ranger";
+    private LoadingCache<CallbackConfigKey, RevolverHttpServiceConfig> clientLoadingCache;
 
     @Builder
     @Inject
@@ -68,16 +68,6 @@ public class InlineCallbackHandler extends CallbackHandler {
         super(persistenceProvider, revolverConfig);
         this.clientLoadingCache = Caffeine.newBuilder()
                 .build(key -> buildConfiguration(key.callbackRequest, key.endpoint));
-    }
-
-    @Data
-    @Builder
-    @EqualsAndHashCode(exclude = "callbackRequest")
-    @ToString(exclude = "callbackRequest")
-    @AllArgsConstructor
-    private static class CallbackConfigKey {
-        private String endpoint;
-        private RevolverCallbackRequest callbackRequest;
     }
 
     @Override
@@ -235,5 +225,15 @@ public class InlineCallbackHandler extends CallbackHandler {
                 .iterator()
                 .next()
                 .getApi());
+    }
+
+    @Data
+    @Builder
+    @EqualsAndHashCode(exclude = "callbackRequest")
+    @ToString(exclude = "callbackRequest")
+    @AllArgsConstructor
+    private static class CallbackConfigKey {
+        private String endpoint;
+        private RevolverCallbackRequest callbackRequest;
     }
 }
