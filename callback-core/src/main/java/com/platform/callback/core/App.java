@@ -10,7 +10,6 @@ import com.platform.callback.common.executor.CallbackExecutor;
 import com.platform.callback.common.executor.CallbackExecutorFactory;
 import com.platform.callback.common.guice.ExecutorInjectorModule;
 import com.platform.callback.common.handler.InlineCallbackHandler;
-import com.platform.callback.common.utils.ConstantUtils;
 import com.platform.callback.core.resources.CallbackRequestResource;
 import com.platform.callback.core.resources.CallbackResource;
 import com.platform.callback.core.services.DownstreamResponseHandler;
@@ -45,20 +44,17 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.platform.callback.common.utils.ConstantUtils.APIS;
 
 /**
  * Created by nitishgoyal13 on 31/1/19.
  */
 @Slf4j
 public class App extends Application<AppConfig> {
-
-    private List<String> packageNameList = Arrays.asList(ConstantUtils.BASE_PACKAGE);
-
 
     @Override
     public void initialize(Bootstrap<AppConfig> bootstrap) {
@@ -104,6 +100,29 @@ public class App extends Application<AppConfig> {
         bootstrap.addBundle(serviceDiscoveryBundle);
 
 
+        initializeRevolverBundle(bootstrap, roseyConfigSourceProvider, serviceDiscoveryBundle);
+        initializePrimerBundle(bootstrap, serviceDiscoveryBundle);
+
+        RabbitmqActorBundle<AppConfig> rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {
+            @Override
+            protected RMQConfig getConfig(AppConfig appConfig) {
+                return appConfig.getRmqConfig();
+            }
+        };
+        bootstrap.addBundle(rabbitmqActorBundle);
+
+        bootstrap.addBundle(new RiemannBundle<AppConfig>() {
+
+            @Override
+            public RiemannConfig getRiemannConfiguration(AppConfig configuration) {
+                return configuration.getRiemann();
+            }
+        });
+
+    }
+
+    private void initializeRevolverBundle(Bootstrap<AppConfig> bootstrap, RoseyConfigSourceProvider roseyConfigSourceProvider,
+                                          ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle) {
         bootstrap.addBundle(new RevolverBundle<AppConfig>() {
 
             @Override
@@ -112,7 +131,7 @@ public class App extends Application<AppConfig> {
             }
 
             @Override
-            public io.dropwizard.revolver.core.config.RevolverConfig getRevolverConfig(AppConfig appConfig) {
+            public RevolverConfig getRevolverConfig(AppConfig appConfig) {
                 return appConfig.getRevolver();
             }
 
@@ -135,7 +154,61 @@ public class App extends Application<AppConfig> {
 
             }
         });
+    }
 
+    @Override
+    public void run(AppConfig configuration, Environment environment) {
+        val objectMapper = environment.getObjectMapper();
+
+        log.info("InitializedManagedObject type: rabbitMqConnection");
+
+        HystrixConfigurationFactory.init(configuration.getHystrixConfig());
+
+        final PersistenceProvider persistenceProvider = getPersistenceProvider(configuration, environment);
+        final InlineCallbackHandler callbackHandler = InlineCallbackHandler.builder()
+                .persistenceProvider(persistenceProvider)
+                .revolverConfig(configuration.getRevolver())
+                .build();
+        environment.jersey()
+                .register(new RevolverRequestFilter(configuration.getRevolver()));
+
+
+        CallbackConfig callbackConfig = configuration.getCallbackConfig();
+
+        Injector injector = Guice.createInjector(new ExecutorInjectorModule(callbackHandler, callbackConfig, persistenceProvider));
+        CallbackExecutorFactory callbackExecutorFactory = new CallbackExecutorFactory(injector);
+        CallbackExecutor callbackExecutor = callbackExecutorFactory.getExecutor(callbackConfig.getCallbackType());
+
+        callbackExecutor.initialize(configuration, environment);
+
+        DownstreamResponseHandler downstreamResponseHandler = DownstreamResponseHandler.builder()
+                .persistenceProvider(persistenceProvider)
+                .callbackHandler(callbackHandler)
+                .callbackExecutor(callbackExecutor)
+                .build();
+
+        CallbackRequestResource callbackRequestResource = CallbackRequestResource.builder()
+                .callbackHandler(callbackHandler)
+                .jsonObjectMapper(objectMapper)
+                .persistenceProvider(persistenceProvider)
+                .msgPackObjectMapper(objectMapper)
+                .downstreamResponseHandler(downstreamResponseHandler)
+                .build();
+
+        CallbackResource callbackResource = CallbackResource.builder()
+                .callbackHandler(callbackHandler)
+                .persistenceProvider(persistenceProvider)
+                .downstreamResponseHandler(downstreamResponseHandler)
+                .build();
+
+        environment.jersey()
+                .register(callbackRequestResource);
+        environment.jersey()
+                .register(callbackResource);
+
+    }
+
+    public void initializePrimerBundle(Bootstrap<AppConfig> bootstrap, ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle) {
         bootstrap.addBundle(new PrimerBundle<AppConfig>() {
 
             @Override
@@ -157,7 +230,7 @@ public class App extends Application<AppConfig> {
                         .map(service -> ((RevolverHttpServiceConfig)service).getApis()
                                 .stream()
                                 .filter(RevolverHttpApiConfig::isWhitelist)
-                                .map(a -> "apis/" + service.getService() + "/" + a.getPath())
+                                .map(a -> APIS + service.getService() + "/" + a.getPath())
                                 .collect(Collectors.toSet()))
                         .flatMap(Collection::stream)
                         .collect(Collectors.toSet());
@@ -236,7 +309,7 @@ public class App extends Application<AppConfig> {
                                                                    RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("dynamic")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url(APIS + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
@@ -254,7 +327,7 @@ public class App extends Application<AppConfig> {
                                                                   RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("static")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url(APIS + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
@@ -271,7 +344,7 @@ public class App extends Application<AppConfig> {
             private PrimerAuthorization primerAutoAuthorization(RevolverHttpApiConfig apiConfig, RevolverHttpServiceConfig serviceConfig) {
                 return PrimerAuthorization.builder()
                         .type("auto")
-                        .url("apis/" + serviceConfig.getService() + "/" + apiConfig.getPath())
+                        .url(APIS + serviceConfig.getService() + "/" + apiConfig.getPath())
                         .methods(apiConfig.getAuthorization()
                                          .getMethods())
                         .roles(apiConfig.getAuthorization()
@@ -286,82 +359,7 @@ public class App extends Application<AppConfig> {
             }
 
         });
-
-        RabbitmqActorBundle<AppConfig> rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {
-            @Override
-            protected RMQConfig getConfig(AppConfig appConfig) {
-                return appConfig.getRmqConfig();
-            }
-        };
-        bootstrap.addBundle(rabbitmqActorBundle);
-
-        bootstrap.addBundle(new RiemannBundle<AppConfig>() {
-
-            @Override
-            public RiemannConfig getRiemannConfiguration(AppConfig configuration) {
-                return configuration.getRiemann();
-            }
-        });
-
-        /*bootstrap.addBundle(GuiceBundle.<AppConfig>builder().enableAutoConfig(packageNameList.toArray(new String[0]))
-                                    .modules(new ExecutorInjectorModule())
-                                    .build(Stage.PRODUCTION));*/
-
-
     }
-
-    @Override
-    public void run(AppConfig configuration, Environment environment) {
-        val objectMapper = environment.getObjectMapper();
-
-        log.info("InitializedManagedObject type: rabbitMqConnection");
-
-        HystrixConfigurationFactory.init(configuration.getHystrixConfig());
-
-        final PersistenceProvider persistenceProvider = getPersistenceProvider(configuration, environment);
-        final InlineCallbackHandler callbackHandler = InlineCallbackHandler.builder()
-                .persistenceProvider(persistenceProvider)
-                .revolverConfig(configuration.getRevolver())
-                .build();
-        environment.jersey()
-                .register(new RevolverRequestFilter(configuration.getRevolver()));
-
-
-        CallbackConfig callbackConfig = configuration.getCallbackConfig();
-
-        Injector injector = Guice.createInjector(new ExecutorInjectorModule(callbackHandler, callbackConfig, persistenceProvider));
-        CallbackExecutorFactory callbackExecutorFactory = new CallbackExecutorFactory(injector);
-        CallbackExecutor callbackExecutor = callbackExecutorFactory.getExecutor(callbackConfig.getCallbackType());
-
-        callbackExecutor.initialize(configuration, environment);
-
-        DownstreamResponseHandler downstreamResponseHandler = DownstreamResponseHandler.builder()
-                .persistenceProvider(persistenceProvider)
-                .callbackHandler(callbackHandler)
-                .callbackExecutor(callbackExecutor)
-                .build();
-
-        CallbackRequestResource callbackRequestResource = CallbackRequestResource.builder()
-                .callbackHandler(callbackHandler)
-                .jsonObjectMapper(objectMapper)
-                .persistenceProvider(persistenceProvider)
-                .msgPackObjectMapper(objectMapper)
-                .downstreamResponseHandler(downstreamResponseHandler)
-                .build();
-
-        CallbackResource callbackResource = CallbackResource.builder()
-                .callbackHandler(callbackHandler)
-                .persistenceProvider(persistenceProvider)
-                .downstreamResponseHandler(downstreamResponseHandler)
-                .build();
-
-        environment.jersey()
-                .register(callbackRequestResource);
-        environment.jersey()
-                .register(callbackResource);
-
-    }
-
 
     private PersistenceProvider getPersistenceProvider(final AppConfig configuration, final Environment environment) {
         final RevolverConfig revolverConfig = configuration.getRevolver();

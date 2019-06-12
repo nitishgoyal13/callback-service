@@ -6,7 +6,9 @@ package com.platform.callback.common.utils;
 public class ConstantUtils {
 
     public static final String MESSAGE = "message";
-    public static String BASE_PACKAGE = "com.platform.callback";
+    public static final String BASE_PACKAGE = "com.platform.callback";
+    public static final String APIS = "apis/";
+
     private ConstantUtils() {
     }
 }

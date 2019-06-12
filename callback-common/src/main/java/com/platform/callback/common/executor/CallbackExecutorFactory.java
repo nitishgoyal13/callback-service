@@ -6,10 +6,12 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.platform.callback.common.annotations.Executor;
 import com.platform.callback.common.config.CallbackConfig;
+import com.platform.callback.common.exception.CallbackException;
 import com.platform.callback.common.utils.ConstantUtils;
 import lombok.Data;
 import org.reflections.Reflections;
 
+import javax.ws.rs.core.Response;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,7 +38,7 @@ public class CallbackExecutorFactory {
 
     public CallbackExecutor getExecutor(CallbackConfig.CallbackType callbackType) {
         if(CollectionUtils.isEmpty(factoryMap) || factoryMap.get(callbackType) == null) {
-            throw new RuntimeException("No mapper exists");
+            throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, "No mapper exists");
         }
         return factoryMap.get(callbackType);
     }

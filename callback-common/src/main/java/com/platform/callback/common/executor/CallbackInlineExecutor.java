@@ -29,7 +29,7 @@ public class CallbackInlineExecutor implements CallbackExecutor {
 
     @Override
     public void initialize(AppConfig configuration, Environment environment) {
-
+        //No initialisation needed for inLine executor
     }
 
     @Override
