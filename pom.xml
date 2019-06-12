@@ -7,7 +7,7 @@
     <groupId>com.platform.callback.service</groupId>
     <artifactId>callback-service</artifactId>
     <packaging>pom</packaging>
-    <version>1.3.12</version>
+    <version>1.3.13-SNAPSHOT</version>
     <modules>
         <module>callback-core</module>
         <module>callback-rmq</module>
@@ -79,7 +79,7 @@
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.jacoco.reportPaths>${project.basedir}/target/jacoco.exec</sonar.jacoco.reportPaths>
         <sonar.language>java</sonar.language>
-        <project.version>1.3.12</project.version>
+        <project.version>1.3.13-SNAPSHOT</project.version>
     </properties>
 
     <repositories>

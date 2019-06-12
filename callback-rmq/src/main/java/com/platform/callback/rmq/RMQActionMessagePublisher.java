@@ -34,15 +34,16 @@ public class RMQActionMessagePublisher {
         return Collections.unmodifiableMap(actors);
     }
 
-    public static <M extends ActionMessage> void publish(M message) {
+    public static <M extends ActionMessage> Boolean publish(M message) {
         try {
             //TODO Implement retryer
             MessageHandlingActor actor = actors.get(message.getQueueId());
             if(actor == null) {
-                return;
+                throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, "No callback actor found for queueId");
             }
             log.info("Published message : " + message.toString());
             actor.publish(message);
+            return true;
         } catch (Exception e) {
             String errorMessage = String.format("Error in publishing in rmq:%s ", message.getQueueId());
             log.error(errorMessage, e);

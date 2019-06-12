@@ -8,11 +8,8 @@ import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.util.HeaderUtil;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
 import javax.ws.rs.core.Response;
 
@@ -23,6 +20,7 @@ import javax.ws.rs.core.Response;
 @NoArgsConstructor
 @Builder
 @Slf4j
+@Data
 public class DownstreamResponseHandler {
 
     private PersistenceProvider persistenceProvider;

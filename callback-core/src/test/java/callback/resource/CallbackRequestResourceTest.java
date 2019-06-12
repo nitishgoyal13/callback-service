@@ -117,7 +117,7 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     public void testPutRequest() {
         stubFor(put(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                .withHeader("Content-Type", "application/json")));
-        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(202)
                                                                         .withHeader("Content-Type", "application/json")));
         assertEquals(202, resources.client()
                 .target("/apis/test/v1/test")
@@ -137,7 +137,7 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     public void testDeleteRequest() {
         stubFor(delete(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                   .withHeader("Content-Type", "application/json")));
-        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(202)
                                                                         .withHeader("Content-Type", "application/json")));
 
         assertEquals(202, resources.client()
@@ -179,7 +179,7 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     public void testPatchRequest() {
         stubFor(patch(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                  .withHeader("Content-Type", "application/json")));
-        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(202)
                                                                         .withHeader("Content-Type", "application/json")));
 
         assertEquals(202, resources.client()

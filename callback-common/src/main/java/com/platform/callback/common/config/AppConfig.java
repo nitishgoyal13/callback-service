@@ -20,6 +20,8 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
+@Builder
+@AllArgsConstructor
 public class AppConfig extends Configuration {
 
 

@@ -22,8 +22,14 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.platform.callback.common.config.AppConfig;
 import com.platform.callback.common.config.CallbackConfig;
 import com.platform.callback.common.config.CallbackPathConfig;
+import com.platform.callback.common.executor.CallbackExecutor;
+import com.platform.callback.common.executor.CallbackExecutorFactory;
+import com.platform.callback.common.guice.ExecutorInjectorModule;
 import com.platform.callback.common.handler.InlineCallbackHandler;
 import com.platform.callback.core.services.DownstreamResponseHandler;
 import com.platform.callback.rmq.RMQActionMessagePublisher;
@@ -69,10 +75,15 @@ public abstract class BaseCallbackTest {
 
     protected static final InMemoryPersistenceProvider inMemoryPersistenceProvider = new InMemoryPersistenceProvider();
     protected static final ObjectMapper mapper = new ObjectMapper();
-    private static final Environment environment = mock(Environment.class);
     protected static InlineCallbackHandler callbackHandler;
     protected static DownstreamResponseHandler downstreamResponseHandler;
+
+    static final Environment environment = mock(Environment.class);
+    static final CallbackConfig callbackConfig;
+    static final AppConfig appConfig;
+
     private static RevolverConfig revolverConfig;
+
 
     static {
         revolverConfig = getRevolverConfig();
@@ -80,9 +91,25 @@ public abstract class BaseCallbackTest {
                 .persistenceProvider(inMemoryPersistenceProvider)
                 .revolverConfig(revolverConfig)
                 .build();
+
+        callbackConfig = CallbackConfig.builder()
+                .callbackType(CallbackConfig.CallbackType.INLINE)
+                .build();
+
+        appConfig = AppConfig.builder()
+                .revolver(revolverConfig)
+                .callbackConfig(callbackConfig)
+                .build();
+
+        Injector injector = Guice.createInjector(new ExecutorInjectorModule(callbackHandler, callbackConfig, inMemoryPersistenceProvider));
+        CallbackExecutorFactory callbackExecutorFactory = new CallbackExecutorFactory(injector);
+        CallbackExecutor callbackExecutor = callbackExecutorFactory.getExecutor(callbackConfig.getCallbackType());
+        callbackExecutor.initialize(appConfig, environment);
+
         downstreamResponseHandler = DownstreamResponseHandler.builder()
                 .callbackHandler(callbackHandler)
                 .persistenceProvider(inMemoryPersistenceProvider)
+                .callbackExecutor(callbackExecutor)
                 .build();
     }
 
@@ -316,8 +343,7 @@ public abstract class BaseCallbackTest {
                 .build();
         actorConfigMap.put(ActionMessage.DEFAULT_QUEUE_ID, actorConfig);
 
-
-        CallbackConfig callbackConfig = getCallbackConfig(actorConfigMap);
+        updateCallbackConfig(callbackConfig, actorConfigMap);
 
         MessageHandlingActor messageHandlingActor = Mockito.spy(
                 new RmqCallbackMessageHandlingActor(ActionMessage.DEFAULT_QUEUE_ID, actorConfig, rmqConnection,
@@ -329,17 +355,15 @@ public abstract class BaseCallbackTest {
         RMQActionMessagePublisher.initialize(messageHandlingActorList);
     }
 
-    private CallbackConfig getCallbackConfig(Map<String, ActorConfig> actorConfigMap) {
+    private void updateCallbackConfig(CallbackConfig callbackConfig, Map<String, ActorConfig> actorConfigMap) {
 
         List<CallbackPathConfig> callbackPathConfigs = Lists.newArrayList();
         callbackPathConfigs.add(CallbackPathConfig.builder()
                                         .pathIds(Lists.newArrayList("/apis/test/v1/test/*", ""))
                                         .queueId(ActionMessage.DEFAULT_QUEUE_ID)
                                         .build());
-        return CallbackConfig.builder()
-                .actors(actorConfigMap)
-                .callbackType(CallbackConfig.CallbackType.RMQ)
-                .callbackPathConfigs(callbackPathConfigs)
-                .build();
+        callbackConfig.setActors(actorConfigMap);
+        callbackConfig.setCallbackPathConfigs(callbackPathConfigs);
+        callbackConfig.setCallbackType(CallbackConfig.CallbackType.RMQ);
     }
 }

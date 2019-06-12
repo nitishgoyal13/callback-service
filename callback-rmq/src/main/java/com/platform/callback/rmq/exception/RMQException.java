@@ -1,4 +1,6 @@
-package com.platform.callback.common.exception;
+package com.platform.callback.rmq.exception;
+
+import com.platform.callback.common.exception.CallbackException;
 
 import javax.ws.rs.core.Response;
 

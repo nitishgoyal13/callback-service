@@ -10,6 +10,7 @@ import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -31,6 +32,7 @@ import javax.ws.rs.core.Response;
 @Singleton
 @Builder
 @Api(value = "RequestCallback")
+@AllArgsConstructor
 public class CallbackResource {
 
     private static final String RESPONSE_CODE_HEADER = "X-RESPONSE-CODE";

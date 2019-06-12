@@ -1,7 +1,7 @@
 package com.platform.callback.rmq;
 
 import com.google.inject.Inject;
-import com.platform.callback.common.exception.RMQException;
+import com.platform.callback.rmq.exception.RMQException;
 import io.dropwizard.actors.connectivity.RMQConnection;
 import io.dropwizard.lifecycle.Managed;
 import lombok.extern.slf4j.Slf4j;
