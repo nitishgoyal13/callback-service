@@ -208,7 +208,7 @@ public class App extends Application<AppConfig> {
 
     }
 
-    public void initializePrimerBundle(Bootstrap<AppConfig> bootstrap, ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle) {
+    private void initializePrimerBundle(Bootstrap<AppConfig> bootstrap, ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle) {
         bootstrap.addBundle(new PrimerBundle<AppConfig>() {
 
             @Override

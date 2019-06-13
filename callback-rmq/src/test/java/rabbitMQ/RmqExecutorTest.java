@@ -1,3 +1,6 @@
+package rabbitMQ;
+
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.platform.callback.common.config.CallbackConfig;
@@ -12,9 +15,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /***
- Created by nitish.goyal on 13/06/19
+ Created by nitish.goyal on 02/02/19
  ***/
-public class CallbackExecutorTest {
+public class RmqExecutorTest {
 
     private static final InlineCallbackHandler callbackHandler;
     private static final CallbackConfig callbackConfig;
@@ -30,17 +33,8 @@ public class CallbackExecutorTest {
                 .build();
 
         callbackConfig = CallbackConfig.builder()
-                .callbackType(CallbackConfig.CallbackType.INLINE)
+                .callbackType(CallbackConfig.CallbackType.RMQ)
                 .build();
-    }
-
-    @Test
-    public void testFactoryForInlineExecutor() {
-        Injector injector = Guice.createInjector(new ExecutorInjectorModule(callbackHandler, callbackConfig, inMemoryPersistenceProvider));
-        CallbackExecutorFactory callbackExecutorFactory = new CallbackExecutorFactory(injector);
-        CallbackExecutor callbackExecutor = callbackExecutorFactory.getExecutor(callbackConfig.getCallbackType());
-        Assert.assertNotNull(callbackExecutor);
-
     }
 
     @Test
@@ -51,4 +45,6 @@ public class CallbackExecutorTest {
         Assert.assertNotNull(callbackExecutor);
 
     }
+
+
 }
