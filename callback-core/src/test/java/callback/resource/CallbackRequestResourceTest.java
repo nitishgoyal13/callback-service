@@ -20,7 +20,7 @@ package callback.resource;
 import callback.BaseCallbackTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import com.platform.callback.resources.CallbackRequestResource;
+import com.platform.callback.core.resources.CallbackRequestResource;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
@@ -117,7 +117,7 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     public void testPutRequest() {
         stubFor(put(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                .withHeader("Content-Type", "application/json")));
-        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(202)
                                                                         .withHeader("Content-Type", "application/json")));
         assertEquals(202, resources.client()
                 .target("/apis/test/v1/test")
@@ -137,7 +137,7 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     public void testDeleteRequest() {
         stubFor(delete(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                   .withHeader("Content-Type", "application/json")));
-        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(202)
                                                                         .withHeader("Content-Type", "application/json")));
 
         assertEquals(202, resources.client()
@@ -179,7 +179,7 @@ public class CallbackRequestResourceTest extends BaseCallbackTest {
     public void testPatchRequest() {
         stubFor(patch(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(202)
                                                                  .withHeader("Content-Type", "application/json")));
-        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(200)
+        stubFor(get(urlEqualTo("/v1/test/callback")).willReturn(aResponse().withStatus(202)
                                                                         .withHeader("Content-Type", "application/json")));
 
         assertEquals(202, resources.client()

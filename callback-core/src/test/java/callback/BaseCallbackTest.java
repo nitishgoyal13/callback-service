@@ -22,15 +22,21 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.platform.callback.App;
-import com.platform.callback.config.CallbackConfig;
-import com.platform.callback.config.CallbackPathConfig;
-import com.platform.callback.handler.InlineCallbackHandler;
-import com.platform.callback.rabbitmq.RMQActionMessagePublisher;
-import com.platform.callback.rabbitmq.actors.impl.MessageHandlingActor;
-import com.platform.callback.rabbitmq.actors.impl.RmqCallbackMessageHandlingActor;
-import com.platform.callback.rabbitmq.actors.messages.ActionMessage;
-import com.platform.callback.services.DownstreamResponseHandler;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.platform.callback.common.config.AppConfig;
+import com.platform.callback.common.config.CallbackConfig;
+import com.platform.callback.common.config.CallbackPathConfig;
+import com.platform.callback.common.executor.CallbackExecutor;
+import com.platform.callback.common.executor.CallbackExecutorFactory;
+import com.platform.callback.common.guice.ExecutorInjectorModule;
+import com.platform.callback.common.handler.InlineCallbackHandler;
+import com.platform.callback.common.utils.ConstantUtils;
+import com.platform.callback.core.services.DownstreamResponseHandler;
+import com.platform.callback.rmq.RMQActionMessagePublisher;
+import com.platform.callback.rmq.actors.impl.MessageHandlingActor;
+import com.platform.callback.rmq.actors.impl.RmqCallbackMessageHandlingActor;
+import com.platform.callback.rmq.actors.messages.ActionMessage;
 import io.dropwizard.Configuration;
 import io.dropwizard.actors.actor.ActorConfig;
 import io.dropwizard.actors.connectivity.RMQConnection;
@@ -39,19 +45,12 @@ import io.dropwizard.jersey.setup.JerseyEnvironment;
 import io.dropwizard.jetty.MutableServletContextHandler;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.revolver.RevolverBundle;
-import io.dropwizard.revolver.core.config.*;
-import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
-import io.dropwizard.revolver.discovery.ServiceResolverConfig;
-import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
+import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.handler.ConfigSource;
-import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
-import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
-import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
 import org.mockito.ArgumentMatchers;
@@ -73,6 +72,41 @@ public abstract class BaseCallbackTest {
     protected static InlineCallbackHandler callbackHandler;
     protected static DownstreamResponseHandler downstreamResponseHandler;
 
+    static final Environment environment = mock(Environment.class);
+    static final CallbackConfig callbackConfig;
+    static final AppConfig appConfig;
+
+    private static RevolverConfig revolverConfig;
+
+
+    static {
+        revolverConfig = ConstantUtils.getRevolverConfig();
+        callbackHandler = InlineCallbackHandler.builder()
+                .persistenceProvider(inMemoryPersistenceProvider)
+                .revolverConfig(revolverConfig)
+                .build();
+
+        callbackConfig = CallbackConfig.builder()
+                .callbackType(CallbackConfig.CallbackType.INLINE)
+                .build();
+
+        appConfig = AppConfig.builder()
+                .revolver(revolverConfig)
+                .callbackConfig(callbackConfig)
+                .build();
+
+        Injector injector = Guice.createInjector(new ExecutorInjectorModule(callbackHandler, callbackConfig, inMemoryPersistenceProvider));
+        CallbackExecutorFactory callbackExecutorFactory = new CallbackExecutorFactory(injector);
+        CallbackExecutor callbackExecutor = callbackExecutorFactory.getExecutor(callbackConfig.getCallbackType());
+        callbackExecutor.initialize(appConfig, environment);
+
+        downstreamResponseHandler = DownstreamResponseHandler.builder()
+                .callbackHandler(callbackHandler)
+                .persistenceProvider(inMemoryPersistenceProvider)
+                .callbackExecutor(callbackExecutor)
+                .build();
+    }
+
     final RevolverBundle<Configuration> bundle = new RevolverBundle<Configuration>() {
 
         @Override
@@ -93,29 +127,13 @@ public abstract class BaseCallbackTest {
         }
     };
     final Configuration configuration = mock(Configuration.class);
-
-    private static final Environment environment = mock(Environment.class);
     private final Bootstrap<?> bootstrap = mock(Bootstrap.class);
     private final HealthCheckRegistry healthChecks = mock(HealthCheckRegistry.class);
     private final JerseyEnvironment jerseyEnvironment = mock(JerseyEnvironment.class);
     private final LifecycleEnvironment lifecycleEnvironment = new LifecycleEnvironment();
     private final RMQConnection rmqConnection = mock(RMQConnection.class);
-
-
     private MetricRegistry metricRegistry = new MetricRegistry();
-    private static RevolverConfig revolverConfig;
 
-    static {
-        revolverConfig = getRevolverConfig();
-        callbackHandler = InlineCallbackHandler.builder()
-                .persistenceProvider(inMemoryPersistenceProvider)
-                .revolverConfig(revolverConfig)
-                .build();
-        downstreamResponseHandler = DownstreamResponseHandler.builder()
-                .callbackHandler(callbackHandler)
-                .persistenceProvider(inMemoryPersistenceProvider)
-                .build();
-    }
 
     @Before
     public void setup() throws Exception {
@@ -150,9 +168,7 @@ public abstract class BaseCallbackTest {
                 .build();
         actorConfigMap.put(ActionMessage.DEFAULT_QUEUE_ID, actorConfig);
 
-
-        CallbackConfig callbackConfig = getCallbackConfig(actorConfigMap);
-        App.initializeMeta(callbackConfig);
+        updateCallbackConfig(callbackConfig, actorConfigMap);
 
         MessageHandlingActor messageHandlingActor = Mockito.spy(
                 new RmqCallbackMessageHandlingActor(ActionMessage.DEFAULT_QUEUE_ID, actorConfig, rmqConnection,
@@ -164,187 +180,15 @@ public abstract class BaseCallbackTest {
         RMQActionMessagePublisher.initialize(messageHandlingActorList);
     }
 
-    private CallbackConfig getCallbackConfig(Map<String, ActorConfig> actorConfigMap) {
+    private void updateCallbackConfig(CallbackConfig callbackConfig, Map<String, ActorConfig> actorConfigMap) {
 
         List<CallbackPathConfig> callbackPathConfigs = Lists.newArrayList();
         callbackPathConfigs.add(CallbackPathConfig.builder()
                                         .pathIds(Lists.newArrayList("/apis/test/v1/test/*", ""))
                                         .queueId(ActionMessage.DEFAULT_QUEUE_ID)
                                         .build());
-        return CallbackConfig.builder()
-                .actors(actorConfigMap)
-                .callbackType(CallbackConfig.CallbackType.RMQ)
-                .callbackPathConfigs(callbackPathConfigs)
-                .build();
-    }
-
-    private static RevolverConfig getRevolverConfig() {
-
-        val simpleEndpoint = new SimpleEndpointSpec();
-        simpleEndpoint.setHost("localhost");
-        simpleEndpoint.setPort(9999);
-
-        val securedEndpoint = new SimpleEndpointSpec();
-        securedEndpoint.setHost("localhost");
-        securedEndpoint.setPort(9933);
-
-        ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.builder()
-                .concurrency(2)
-                .dynamicRequestQueueSize(2)
-                .threadPoolName("test")
-                .timeout(100)
-                .build();
-
-
-        return RevolverConfig.builder()
-                .mailBox(InMemoryMailBoxConfig.builder()
-                                 .build())
-                .serviceResolverConfig(ServiceResolverConfig.builder()
-                                               .namespace("test")
-                                               .useCurator(false)
-                                               .zkConnectionString("localhost:2181")
-                                               .build())
-                .clientConfig(ClientConfig.builder()
-                                      .clientName("test-client")
-                                      .build())
-                .global(new RuntimeConfig())
-                .service(RevolverHttpServiceConfig.builder()
-                                 .authEnabled(false)
-                                 .connectionPoolSize(1)
-                                 .secured(false)
-                                 .enpoint(simpleEndpoint)
-                                 .service("test")
-                                 .type("http")
-                                 .threadPoolGroupConfig(ThreadPoolGroupConfig.builder()
-                                                                .threadPools(Lists.newArrayList(threadPoolConfig))
-                                                                .build())
-                                 .api(RevolverHttpApiConfig.configBuilder()
-                                              .api("test")
-                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                              .path("{version}/test")
-                                              .runtime(HystrixCommandConfig.builder()
-                                                               .threadPool(ThreadPoolConfig.builder()
-                                                                                   .concurrency(1)
-                                                                                   .timeout(2000)
-                                                                                   .build())
-                                                               .build())
-                                              .build())
-                                 .api(RevolverHttpApiConfig.configBuilder()
-                                              .api("testAsync")
-                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                              .path("{version}/test/async")
-                                              .runtime(HystrixCommandConfig.builder()
-                                                               .threadPool(ThreadPoolConfig.builder()
-                                                                                   .concurrency(1)
-                                                                                   .timeout(2000)
-                                                                                   .build())
-                                                               .build())
-                                              .build())
-                                 .api(RevolverHttpApiConfig.configBuilder()
-                                              .api("test_multi")
-                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                              .path("{version}/test/{operation}")
-                                              .runtime(HystrixCommandConfig.builder()
-                                                               .threadPool(ThreadPoolConfig.builder()
-                                                                                   .concurrency(1)
-                                                                                   .timeout(2000)
-                                                                                   .build())
-                                                               .build())
-                                              .build())
-                                 .api(RevolverHttpApiConfig.configBuilder()
-                                              .api("callback")
-                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                              .path("{version}/test/callback")
-                                              .runtime(HystrixCommandConfig.builder()
-                                                               .threadPool(ThreadPoolConfig.builder()
-                                                                                   .concurrency(1)
-                                                                                   .timeout(2000)
-                                                                                   .build())
-                                                               .build())
-                                              .build())
-                                 .api(RevolverHttpApiConfig.configBuilder()
-                                              .api("test_group_thread_pool")
-                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                              .path("{version}/test/{operation}")
-                                              .runtime(HystrixCommandConfig.builder()
-                                                               .threadPool(ThreadPoolConfig.builder()
-                                                                                   .concurrency(1)
-                                                                                   .timeout(2000)
-                                                                                   .build())
-                                                               .build())
-                                              .build())
-                                 .build())
-                .service(RevolverHttpsServiceConfig.builder()
-                                 .authEnabled(false)
-                                 .connectionPoolSize(1)
-                                 .enpoint(securedEndpoint)
-                                 .service("test_secured")
-                                 .type("https")
-                                 .api(RevolverHttpApiConfig.configBuilder()
-                                              .api("test")
-                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                              .path("{version}/test")
-                                              .runtime(HystrixCommandConfig.builder()
-                                                               .threadPool(ThreadPoolConfig.builder()
-                                                                                   .concurrency(1)
-                                                                                   .timeout(2000)
-                                                                                   .build())
-                                                               .build())
-                                              .build())
-                                 .api(RevolverHttpApiConfig.configBuilder()
-                                              .api("test_multi")
-                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                              .path("{version}/test/{operation}")
-                                              .runtime(HystrixCommandConfig.builder()
-                                                               .threadPool(ThreadPoolConfig.builder()
-                                                                                   .concurrency(1)
-                                                                                   .timeout(2000)
-                                                                                   .build())
-                                                               .build())
-                                              .build())
-                                 .build())
-                .build();
+        callbackConfig.setActors(actorConfigMap);
+        callbackConfig.setCallbackPathConfigs(callbackPathConfigs);
+        callbackConfig.setCallbackType(CallbackConfig.CallbackType.RMQ);
     }
 }

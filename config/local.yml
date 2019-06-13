@@ -50,6 +50,28 @@ riemann:
   tags:
     - callback
 
+primer:
+  enabled: true
+  endpoint:
+    type: simple
+    host: primer.traefik.stg.phonepe.com
+    port: 80
+  cacheExpiry: 10
+  cacheMaxSize: 100000
+  clockSkew: 60
+  prefix: Bearer
+  privateKey: TwhjV5ujkvb41frpmqCve7ZfhqwSDMqOXe01DeDIsb2xCrW4bwfFnax9bi2uC9Kn
+  whileListUrl:
+    - callback/v1/callback/{requestId}
+    - callback/dashboard
+    - callback/v1/metadata/status
+    - callback/v1/metadata/config
+    - callback/v1/request/status/{requestId}
+    - callback/v1/request/ack/{requestId}
+    - callback/v1/response/{requestId}
+    - apis/foxtrotService/foxtrot/v1/tables
+    - apis/foxtrot/foxtrot/v1/tables
+
 callbackConfig:
   callbackType: RMQ
   callbackPathConfigs:
