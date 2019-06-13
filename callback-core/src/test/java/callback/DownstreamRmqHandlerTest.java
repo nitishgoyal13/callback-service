@@ -49,13 +49,10 @@ public class DownstreamRmqHandlerTest extends BaseCallbackTest {
 
     private static final String REQUEST_ID = "r1";
     private static final String MAILBOX_ID = "m1";
-
-    private byte[] body = "response".getBytes();
-    private Map<String, List<String>> headers = Maps.newHashMap();
-
     @Rule
     public PowerMockRule wireMockRule = new PowerMockRule();
-
+    private byte[] body = "response".getBytes();
+    private Map<String, List<String>> headers = Maps.newHashMap();
 
     @Before
     public void setUp() {

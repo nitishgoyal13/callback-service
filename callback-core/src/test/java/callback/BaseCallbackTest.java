@@ -75,13 +75,11 @@ public abstract class BaseCallbackTest {
 
     protected static final InMemoryPersistenceProvider inMemoryPersistenceProvider = new InMemoryPersistenceProvider();
     protected static final ObjectMapper mapper = new ObjectMapper();
-    protected static InlineCallbackHandler callbackHandler;
-    protected static DownstreamResponseHandler downstreamResponseHandler;
-
     static final Environment environment = mock(Environment.class);
     static final CallbackConfig callbackConfig;
     static final AppConfig appConfig;
-
+    protected static InlineCallbackHandler callbackHandler;
+    protected static DownstreamResponseHandler downstreamResponseHandler;
     private static RevolverConfig revolverConfig;
 
 
