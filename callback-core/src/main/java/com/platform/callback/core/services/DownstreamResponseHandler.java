@@ -32,7 +32,7 @@ public class DownstreamResponseHandler {
             final val callbackRequest = persistenceProvider.request(requestId);
             if(callbackRequest == null) {
                 log.error("Callback Request Not Found for path : " + path);
-                throw new CallbackException(Response.Status.INTERNAL_SERVER_ERROR, "Callback request not found");
+                throw new CallbackException(Response.Status.BAD_REQUEST, "Callback request not found");
             }
 
             if(StringUtils.isEmpty(path)) {
