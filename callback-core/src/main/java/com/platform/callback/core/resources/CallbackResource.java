@@ -61,6 +61,12 @@ public class CallbackResource {
                     .statusCode(responseCode != null ? Integer.parseInt(responseCode) : Response.Status.OK.getStatusCode())
                     .build();
 
+            final val callbackRequest = persistenceProvider.request(requestId);
+            if(callbackRequest == null) {
+                Response.status(Response.Status.BAD_REQUEST)
+                        .build();
+            }
+
             downstreamResponseHandler.saveResponse(requestId, response, headers.getRequestHeaders()
                     .getFirst(RevolversHttpHeaders.CALLBACK_URI_HEADER));
             log.info("Callback added for processing");
