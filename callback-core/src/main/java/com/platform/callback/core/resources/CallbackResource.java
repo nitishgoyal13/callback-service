@@ -60,9 +60,10 @@ public class CallbackResource {
                     .headers(headers.getRequestHeaders())
                     .statusCode(responseCode != null ? Integer.parseInt(responseCode) : Response.Status.OK.getStatusCode())
                     .build();
-
+            log.info("Calls coming to newer version");
             final val callbackRequest = persistenceProvider.request(requestId);
             if(callbackRequest == null) {
+                log.error("Callback request no found, sending bad request response");
                 Response.status(Response.Status.BAD_REQUEST)
                         .build();
             }
