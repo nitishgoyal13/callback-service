@@ -1,10 +1,8 @@
 package com.platform.callback.core;
 
-import com.google.common.base.Strings;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.hystrix.configurator.core.HystrixConfigurationFactory;
-import com.phonepe.rosey.dwconfig.RoseyConfigSourceProvider;
 import com.platform.callback.common.config.AppConfig;
 import com.platform.callback.common.config.CallbackConfig;
 import com.platform.callback.common.executor.CallbackExecutor;
@@ -66,15 +64,9 @@ public class App extends Application<AppConfig> {
             }
         });
         String localConfigStr = System.getenv("localConfig");
-        RoseyConfigSourceProvider roseyConfigSourceProvider = new RoseyConfigSourceProvider("edge", "apicallback");
 
-        boolean localConfig = !Strings.isNullOrEmpty(localConfigStr) && Boolean.parseBoolean(localConfigStr);
-        if(localConfig) {
-            bootstrap.setConfigurationSourceProvider(
-                    new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
-        } else {
-            bootstrap.setConfigurationSourceProvider(roseyConfigSourceProvider);
-        }
+        bootstrap.setConfigurationSourceProvider(
+                new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
 
         ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle = new ServiceDiscoveryBundle<AppConfig>() {
             @Override
@@ -96,7 +88,7 @@ public class App extends Application<AppConfig> {
         bootstrap.addBundle(serviceDiscoveryBundle);
 
 
-        initializeRevolverBundle(bootstrap, roseyConfigSourceProvider, serviceDiscoveryBundle);
+        initializeRevolverBundle(bootstrap, serviceDiscoveryBundle);
         initializePrimerBundle(bootstrap, serviceDiscoveryBundle);
 
         RabbitmqActorBundle<AppConfig> rabbitmqActorBundle = new RabbitmqActorBundle<AppConfig>() {
@@ -117,8 +109,7 @@ public class App extends Application<AppConfig> {
 
     }
 
-    private void initializeRevolverBundle(Bootstrap<AppConfig> bootstrap, RoseyConfigSourceProvider roseyConfigSourceProvider,
-                                          ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle) {
+    private void initializeRevolverBundle(Bootstrap<AppConfig> bootstrap, ServiceDiscoveryBundle<AppConfig> serviceDiscoveryBundle) {
         bootstrap.addBundle(new RevolverBundle<AppConfig>() {
 
             @Override
@@ -140,7 +131,7 @@ public class App extends Application<AppConfig> {
             public ConfigSource getConfigSource() {
                 return () -> {
                     try {
-                        return roseyConfigSourceProvider.fetchRemoteConfig();
+                        return null;
                     } catch (Exception e) {
                         log.error("Exception in getting source ", e);
 

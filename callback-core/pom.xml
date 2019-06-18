@@ -112,9 +112,9 @@
                         <artifactId>docker-maven-plugin</artifactId>
                         <version>0.4.10</version>
                         <configuration>
-                            <imageName>docker.phonepe.com:5000/callback-service:${project.version}</imageName>
+                            <imageName>docker.local.com:5000/callback-service:${project.version}</imageName>
                             <dockerDirectory>${project.basedir}/..</dockerDirectory>
-                            <registryUrl>http://docker.phonepe.com:5000/</registryUrl>
+                            <registryUrl>http://docker.local.com:5000/</registryUrl>
                         </configuration>
                         <executions>
                             <execution>
@@ -131,7 +131,7 @@
                                     <goal>push</goal>
                                 </goals>
                                 <configuration>
-                                    <imageName>docker.phonepe.com:5000/callback-service:${project.version}</imageName>
+                                    <imageName>docker.local.com:5000/callback-service:${project.version}</imageName>
                                 </configuration>
                             </execution>
                         </executions>

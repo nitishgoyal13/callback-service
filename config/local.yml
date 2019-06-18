@@ -36,7 +36,7 @@ rmqConfig:
   password: guest
 
 discovery:
-  namespace: phonepe
+  namespace: local
   environment: local
   zookeeper: localhost:2181
   publishedHost: 127.0.0.1
@@ -54,7 +54,7 @@ primer:
   enabled: true
   endpoint:
     type: simple
-    host: primer.traefik.stg.phonepe.com
+    host: primer.traefik.stg.local.com
     port: 80
   cacheExpiry: 10
   cacheMaxSize: 100000
@@ -180,7 +180,7 @@ revolver:
           timeout: 1500
       endpoint:
         type: simple
-        host: paymentservice.traefik.stg.phonepe.com
+        host: paymentservice.traefik.stg.local.com
         port: 80
       apis:
         - api: get_transaction_limits

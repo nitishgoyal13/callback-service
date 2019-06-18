@@ -172,16 +172,16 @@
                                     <goal>push</goal>
                                 </goals>
                                 <configuration>
-                                    <imageName>docker.phonepe.com:5000/phonepe-api-callback:${project.version}
+                                    <imageName>docker.local.com:5000/api-callback:${project.version}
                                     </imageName>
                                 </configuration>
                             </execution>
                         </executions>
                         <configuration>
-                            <imageName>docker.phonepe.com:5000/phonepe-api-callback:${project.version}</imageName>
+                            <imageName>docker.local.com:5000/api-callback:${project.version}</imageName>
                             <dockerDirectory>${project.basedir}</dockerDirectory>
-                            <serverId>phonepe-docker</serverId>
-                            <registryUrl>http://docker.phonepe.com:5000/</registryUrl>
+                            <serverId>local-docker</serverId>
+                            <registryUrl>http://docker.local.com:5000/</registryUrl>
                         </configuration>
                     </plugin>
                 </plugins>
