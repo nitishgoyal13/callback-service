@@ -60,7 +60,7 @@ primer:
   cacheMaxSize: 100000
   clockSkew: 60
   prefix: Bearer
-  privateKey: TwhjV5ujkvb41frpmqCve7ZfhqwSDMqOXe01DeDIsb2xCrW4bwfFnax9bi2uC9Kn
+  privateKey:
   whileListUrl:
     - callback/v1/callback/{requestId}
     - callback/dashboard
