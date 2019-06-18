@@ -11,21 +11,6 @@ server:
       - type: console
         timeZone: IST
 
-checkmate:
-  requestValidation: false
-  responseChecksum: false
-  clockSkew: 120
-  algorithm: AES/ECB/PKCS5Padding
-  whiteList:
-    - callback/v1/callback/{requestId}
-    - callback/dashboard
-    - callback/v1/metadata/status
-    - callback/v1/metadata/config
-    - callback/v1/request/status/{requestId}
-    - callback/v1/request/ack/{requestId}
-    - callback/v1/response/{requestId}
-    - apis/callback/foxtrot/foxtrot/v1/tables
-
 logging:
   level: WARN
   # Logger-specific levels.pay
@@ -51,7 +36,7 @@ rmqConfig:
   password: guest
 
 discovery:
-  namespace: phonepe
+  namespace: local
   environment: local
   zookeeper: localhost:2181
   publishedHost: 127.0.0.1
@@ -69,13 +54,13 @@ primer:
   enabled: true
   endpoint:
     type: simple
-    host: primer.traefik.stg.phonepe.com
+    host: primer.traefik.stg.local.com
     port: 80
   cacheExpiry: 10
   cacheMaxSize: 100000
   clockSkew: 60
   prefix: Bearer
-  privateKey: TwhjV5ujkvb41frpmqCve7ZfhqwSDMqOXe01DeDIsb2xCrW4bwfFnax9bi2uC9Kn
+  privateKey:
   whileListUrl:
     - callback/v1/callback/{requestId}
     - callback/dashboard
@@ -84,7 +69,43 @@ primer:
     - callback/v1/request/status/{requestId}
     - callback/v1/request/ack/{requestId}
     - callback/v1/response/{requestId}
-    - apis/users/foxtrot/v1/tables
+    - apis/foxtrotService/foxtrot/v1/tables
+    - apis/foxtrot/foxtrot/v1/tables
+
+callbackConfig:
+  callbackType: RMQ
+  callbackPathConfigs:
+    - pathIds:
+      - "/foxtrot/*"
+      queueId: DEFAULT
+    - pathIds:
+      - "/payment/*"
+      - "/nexus/*"
+      - "/mercury/*"
+      queueId: payment-queue
+  actors:
+      DEFAULT:
+        exchange: callback_messages
+        delayed: false
+        prefix: callback.actors
+        concurrency: 3
+        prefetchCount: 1
+        retryConfig:
+          type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+          maxAttempts: 6
+          multipier: 50
+          maxTimeBetweenRetries: 30s
+      payment-queue:
+        exchange: callback_messages
+        delayed: false
+        prefix: callback.actors
+        concurrency: 3
+        prefetchCount: 1
+        retryConfig:
+          type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
+          maxAttempts: 6
+          multipier: 50
+          maxTimeBetweenRetries: 30s
 
 revolver:
   hystrixStreamPath: /hystrix.stream
@@ -107,31 +128,8 @@ revolver:
         type: simple
         host: localhost
         port: 17000
-      actors:
-        DEFAULT:
-          exchange: callback_messages
-          delayed: false
-          prefix: callback.actors
-          concurrency: 3
-          prefetchCount: 1
-          retryConfig:
-            type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
-            maxAttempts: 6
-            multipier: 50
-            maxTimeBetweenRetries: 30s
-        foxtrot-queue:
-          exchange: callback_messages
-          delayed: false
-          prefix: callback.actors
-          concurrency: 3
-          prefetchCount: 1
-          retryConfig:
-            type: COUNT_LIMITED_EXPONENTIAL_BACKOFF
-            maxAttempts: 6
-            multipier: 50
-            maxTimeBetweenRetries: 30s
       apis:
-        - api: cw_schedule
+        - api: tables
           path: "foxtrot/v1/tables"
           methods:
             - GET
@@ -139,14 +137,24 @@ revolver:
             type: static
             methods:
               - GET
-            roles:
-              - internal-service
           whitelist: true
           runtime:
             threadPool:
-              concurrency: 2
-              timeout: 20000
-          callbackQueueId: foxtrot-queue
+              concurrency: 4
+              timeout: 60000
+        - api: table
+          path: "foxtrot/v1/tables/{table}"
+          methods:
+            - GET
+          authorization:
+            type: static
+            methods:
+              - GET
+          whitelist: true
+          runtime:
+            threadPool:
+              concurrency: 4
+              timeout: 60000
     - type: http
       service: payments
       connectionPoolSize: 64
@@ -172,7 +180,7 @@ revolver:
           timeout: 1500
       endpoint:
         type: simple
-        host: paymentservice.traefik.stg.phonepe.com
+        host: paymentservice.traefik.stg.local.com
         port: 80
       apis:
         - api: get_transaction_limits
@@ -218,3 +226,4 @@ revolver:
             roles:
               - consumer
               - merchant
+

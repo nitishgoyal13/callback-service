@@ -1,0 +1,25 @@
+zookeeper:
+  image: zookeeper
+  hostname: zookeeper
+  ports:
+    - "2181:2181"
+
+#api compose
+api-callback:
+  container_name: api-callback
+  build: .
+  ports:
+   - "8080:8080"
+   - "8081:8081"
+  volumes:
+   - /var/log/api-callback
+  links:
+   - zookeeper
+
+# enviroment valiables
+  environment:
+   - GC_ALGO=UseG1GC
+   - JAVA_PROCESS_MIN_HEAP=1g
+   - JAVA_PROCESS_MAX_HEAP=1g
+   - CONFIG_ENV=dev
+   - ZK_CONNECTION_STRING=zookeeper:2181
