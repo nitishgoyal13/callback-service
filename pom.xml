@@ -57,7 +57,7 @@
         <aerospike.version>4.2.2</aerospike.version>
         <checkmate.version>1.3.7-2</checkmate.version>
         <ranger.version>0.4.0</ranger.version>
-        <http.client.version>4.5.6</http.client.version>
+        <http.client.version>4.5.13</http.client.version>
         <commons.text.version>1.4</commons.text.version>
         <caffeine.version>2.6.2</caffeine.version>
         <junit.version>4.12</junit.version>
